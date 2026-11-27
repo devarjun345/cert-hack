@@ -2,8 +2,56 @@ const API_BASE_URL = "http://127.0.0.1:8000";
 const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 const HISTORY_LIMIT = 100;
 const HISTORY_PAGE_SIZE = 10;
+const QUESTION_TIME_LIMIT = 60;
 const ACTIVE_SESSION_KEY = "grimoire.active-session.v1";
 const LAST_RESULT_KEY = "grimoire.last-result.v1";
+const DEMO_STORE_KEY = "grimoire.demo-data.v1";
+const FORCE_DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
+
+const DEMO_SOURCE_TEXT = "Cells are the basic units of life. The cell membrane regulates what enters and leaves a cell. In eukaryotic cells, the nucleus stores DNA, mitochondria produce most usable cellular energy, and chloroplasts carry out photosynthesis in plants. Ribosomes build proteins. During photosynthesis, plants use light energy, water, and carbon dioxide to produce glucose and oxygen.";
+
+const DEMO_SEED = {
+  documents: [
+    { document_id: "demo-biology", filename: "Biology - Cell Structure.pdf", page_count: 18, extraction_status: "sample", text_preview: DEMO_SOURCE_TEXT, uploaded_at: "2026-11-27T09:10:00" },
+    { document_id: "demo-history", filename: "World History - Ancient Civilizations.pdf", page_count: 32, extraction_status: "sample", text_preview: "Ancient civilizations developed around reliable sources of water. Agriculture supported permanent settlements, specialized work, trade, and systems of writing and government.", uploaded_at: "2026-11-26T14:30:00" },
+    { document_id: "demo-chemistry", filename: "Chemistry - Atomic Basics.pdf", page_count: 12, extraction_status: "sample", text_preview: "Atoms contain protons and neutrons in a nucleus, with electrons occupying regions around it. The number of protons determines an element's atomic number.", uploaded_at: "2026-11-25T11:00:00" },
+  ],
+  attempts: [
+    { attempt_id: 1042, document_name: "Biology - Cell Structure.pdf", score: 9, total_questions: 10, accuracy: 90, attempted_at: "2026-11-27T09:45:00" },
+    { attempt_id: 1038, document_name: "World History - Ancient Civilizations.pdf", score: 8, total_questions: 10, accuracy: 80, attempted_at: "2026-11-26T15:05:00" },
+    { attempt_id: 1034, document_name: "Chemistry - Atomic Basics.pdf", score: 7, total_questions: 10, accuracy: 70, attempted_at: "2026-11-25T11:42:00" },
+    { attempt_id: 1029, document_name: "Biology - Cell Structure.pdf", score: 4, total_questions: 5, accuracy: 80, attempted_at: "2026-11-23T10:20:00" },
+  ],
+};
+
+const DEMO_QUESTION_BANK = [
+  { question: "What is the basic structural and functional unit of life?", options: [{ id: "A", text: "Cell" }, { id: "B", text: "Atom" }, { id: "C", text: "Organ" }, { id: "D", text: "Tissue" }], correct_option_id: "A", explanation: "Cells are the basic units of life." },
+  { question: "Which structure regulates what enters and leaves a cell?", options: [{ id: "A", text: "Nucleus" }, { id: "B", text: "Cell membrane" }, { id: "C", text: "Ribosome" }, { id: "D", text: "Mitochondrion" }], correct_option_id: "B", explanation: "The cell membrane controls movement into and out of the cell." },
+  { question: "Where is DNA stored in a typical eukaryotic cell?", options: [{ id: "A", text: "Cell membrane" }, { id: "B", text: "Ribosome" }, { id: "C", text: "Nucleus" }, { id: "D", text: "Cytoplasm only" }], correct_option_id: "C", explanation: "The nucleus stores the cell's DNA." },
+  { question: "Which organelle produces most usable cellular energy?", options: [{ id: "A", text: "Mitochondrion" }, { id: "B", text: "Golgi apparatus" }, { id: "C", text: "Vacuole" }, { id: "D", text: "Cell wall" }], correct_option_id: "A", explanation: "Mitochondria produce most of a cell's usable energy." },
+  { question: "Which organelle carries out photosynthesis in plant cells?", options: [{ id: "A", text: "Ribosome" }, { id: "B", text: "Chloroplast" }, { id: "C", text: "Nucleus" }, { id: "D", text: "Lysosome" }], correct_option_id: "B", explanation: "Photosynthesis takes place in chloroplasts." },
+  { question: "What is the primary role of ribosomes?", options: [{ id: "A", text: "Store DNA" }, { id: "B", text: "Build proteins" }, { id: "C", text: "Control entry to the cell" }, { id: "D", text: "Capture sunlight" }], correct_option_id: "B", explanation: "Ribosomes assemble proteins." },
+  { question: "Which inputs are used during photosynthesis?", options: [{ id: "A", text: "Oxygen and glucose" }, { id: "B", text: "Water and carbon dioxide" }, { id: "C", text: "Protein and nitrogen" }, { id: "D", text: "Salt and oxygen" }], correct_option_id: "B", explanation: "Plants use water and carbon dioxide along with light energy." },
+  { question: "Which products are made by photosynthesis?", options: [{ id: "A", text: "Glucose and oxygen" }, { id: "B", text: "Water and nitrogen" }, { id: "C", text: "Carbon dioxide and protein" }, { id: "D", text: "DNA and water" }], correct_option_id: "A", explanation: "Photosynthesis produces glucose and oxygen." },
+  { question: "Which cell structure contains the genetic material in eukaryotes?", options: [{ id: "A", text: "Nucleus" }, { id: "B", text: "Cell wall" }, { id: "C", text: "Ribosome" }, { id: "D", text: "Chloroplast only" }], correct_option_id: "A", explanation: "In eukaryotic cells, DNA is stored in the nucleus." },
+  { question: "What kind of energy powers photosynthesis?", options: [{ id: "A", text: "Sound energy" }, { id: "B", text: "Light energy" }, { id: "C", text: "Mechanical energy" }, { id: "D", text: "Magnetic energy" }], correct_option_id: "B", explanation: "Photosynthesis uses light energy." },
+];
+
+const DEMO_CHEMISTRY_QUESTION_BANK = [
+  { question: "Which subatomic particle has a positive charge?", options: [{ id: "A", text: "Proton" }, { id: "B", text: "Neutron" }, { id: "C", text: "Electron" }, { id: "D", text: "Photon" }], correct_option_id: "A", explanation: "Protons have a positive electric charge." },
+  { question: "Which particle has no electric charge?", options: [{ id: "A", text: "Proton" }, { id: "B", text: "Neutron" }, { id: "C", text: "Electron" }, { id: "D", text: "Ion" }], correct_option_id: "B", explanation: "Neutrons are electrically neutral." },
+  { question: "Which particle has a negative charge?", options: [{ id: "A", text: "Neutron" }, { id: "B", text: "Proton" }, { id: "C", text: "Electron" }, { id: "D", text: "Nucleus" }], correct_option_id: "C", explanation: "Electrons have a negative electric charge." },
+  { question: "What determines an element's atomic number?", options: [{ id: "A", text: "Number of protons" }, { id: "B", text: "Number of neutrons" }, { id: "C", text: "Number of shells" }, { id: "D", text: "Total mass" }], correct_option_id: "A", explanation: "An element's atomic number is the number of protons in its nucleus." },
+  { question: "Where are protons and neutrons found?", options: [{ id: "A", text: "In the nucleus" }, { id: "B", text: "Outside the atom" }, { id: "C", text: "In electron shells" }, { id: "D", text: "In chemical bonds only" }], correct_option_id: "A", explanation: "Protons and neutrons are located in the nucleus." },
+];
+
+const DEMO_HISTORY_QUESTION_BANK = [
+  { question: "Where did many early civilizations develop?", options: [{ id: "A", text: "Near reliable water sources" }, { id: "B", text: "Only on mountain peaks" }, { id: "C", text: "Far from trade routes" }, { id: "D", text: "On uninhabited islands" }], correct_option_id: "A", explanation: "Reliable water supported agriculture and permanent settlements." },
+  { question: "What helped support permanent settlements?", options: [{ id: "A", text: "Agriculture" }, { id: "B", text: "Seasonal migration only" }, { id: "C", text: "The absence of trade" }, { id: "D", text: "Nomadic hunting alone" }], correct_option_id: "A", explanation: "Agriculture provided a more reliable food supply." },
+  { question: "What did specialized work allow people to do?", options: [{ id: "A", text: "Focus on different occupations" }, { id: "B", text: "Stop exchanging goods" }, { id: "C", text: "Avoid living in settlements" }, { id: "D", text: "Eliminate government" }], correct_option_id: "A", explanation: "Stable food supplies allowed people to develop different occupations." },
+  { question: "Which development helped preserve records and information?", options: [{ id: "A", text: "Writing systems" }, { id: "B", text: "Barter alone" }, { id: "C", text: "Seasonal flooding" }, { id: "D", text: "Stone tools only" }], correct_option_id: "A", explanation: "Writing systems helped civilizations record information." },
+  { question: "What does trade allow communities to do?", options: [{ id: "A", text: "Exchange goods" }, { id: "B", text: "Avoid all contact" }, { id: "C", text: "End specialization" }, { id: "D", text: "Stop producing food" }], correct_option_id: "A", explanation: "Trade connects communities through the exchange of goods." },
+];
 
 const app = document.getElementById("app");
 const sidebar = document.getElementById("sidebar");
@@ -24,6 +72,8 @@ const state = {
   durationSeconds: 20 * 60,
   startedAt: null,
   deadline: null,
+  questionTimeRemaining: {},
+  currentQuestionStartedAt: null,
   timeoutReached: false,
   timerId: null,
   isSubmitting: false,
@@ -32,6 +82,10 @@ const state = {
   historySort: "recent",
   historyPage: 1,
   lastResult: null,
+  apiOnline: false,
+  demoMode: FORCE_DEMO_MODE,
+  demoCorrectAnswers: {},
+  demoData: null,
 };
 
 function escapeHtml(value) {
@@ -81,18 +135,24 @@ async function requestJson(path, options = {}) {
   return payload;
 }
 
-function setSystemStatus(online) {
-  systemStatusName.textContent = online ? "ONLINE" : "OFFLINE";
-  systemStatusDot.className = `status-dot ${online ? "online" : "offline"}`;
-  systemStatusDot.setAttribute("aria-label", online ? "API online" : "API offline");
+function setSystemStatus(online, demo = state.demoMode) {
+  systemStatusName.textContent = demo ? "DEMO" : online ? "ONLINE" : "OFFLINE";
+  systemStatusDot.className = `status-dot ${demo ? "demo" : online ? "online" : "offline"}`;
+  systemStatusDot.setAttribute("aria-label", demo ? "Demo mode active" : online ? "API online" : "API offline");
 }
 
 async function checkSystemStatus() {
   try {
     await requestJson("/");
-    setSystemStatus(true);
-  } catch {
-    setSystemStatus(false);
+    state.apiOnline = true;
+    state.demoMode = FORCE_DEMO_MODE || Boolean(state.quiz?.is_demo || state.document?.is_demo);
+    setSystemStatus(true, state.demoMode);
+    return true;
+  } catch (error) {
+    state.apiOnline = false;
+    state.demoMode = FORCE_DEMO_MODE || Boolean(state.quiz?.is_demo) || isConnectionError(error);
+    setSystemStatus(false, state.demoMode);
+    return false;
   }
 }
 
@@ -121,6 +181,33 @@ function formatDuration(seconds) {
   return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
 }
 
+function getCurrentQuestionRemaining(now = Date.now()) {
+  const question = state.quiz?.questions?.[state.currentQuestion];
+  if (!question) return QUESTION_TIME_LIMIT;
+  const saved = Number(state.questionTimeRemaining[question.id]);
+  const remaining = Number.isFinite(saved) ? saved : QUESTION_TIME_LIMIT;
+  if (!state.currentQuestionStartedAt) return remaining;
+  return Math.max(0, remaining - Math.floor((now - state.currentQuestionStartedAt) / 1000));
+}
+
+function syncCurrentQuestionTime(now = Date.now()) {
+  const question = state.quiz?.questions?.[state.currentQuestion];
+  if (!question) return QUESTION_TIME_LIMIT;
+  if (!Number.isFinite(Number(state.questionTimeRemaining[question.id]))) {
+    state.questionTimeRemaining[question.id] = QUESTION_TIME_LIMIT;
+  }
+  if (!state.currentQuestionStartedAt) state.currentQuestionStartedAt = now;
+  const elapsed = Math.floor((now - state.currentQuestionStartedAt) / 1000);
+  if (elapsed > 0) {
+    state.questionTimeRemaining[question.id] = Math.max(
+      0,
+      Number(state.questionTimeRemaining[question.id]) - elapsed,
+    );
+    state.currentQuestionStartedAt += elapsed * 1000;
+  }
+  return Number(state.questionTimeRemaining[question.id]);
+}
+
 function accuracyClass(value) {
   const accuracy = Number(value);
   if (accuracy >= 80) return "accuracy-good";
@@ -138,6 +225,61 @@ function attemptAccuracy(item) {
   return Number.isFinite(score) && Number.isFinite(total) && total > 0
     ? Math.max(0, Math.min(100, (score / total) * 100))
     : 0;
+}
+
+function isConnectionError(error) {
+  return error?.message?.startsWith("Could not connect to the Grimoire API")
+    || error?.message?.startsWith("The API request timed out");
+}
+
+function cloneDemoSeed() {
+  return JSON.parse(JSON.stringify(DEMO_SEED));
+}
+
+function getDemoData() {
+  if (state.demoData) return state.demoData;
+  try {
+    const stored = localStorage.getItem(DEMO_STORE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed.documents) && Array.isArray(parsed.attempts)) {
+        state.demoData = parsed;
+        return state.demoData;
+      }
+      showToast("Saved demo data was invalid. Sample data has been restored.", "error");
+    }
+  } catch {
+    showToast("Saved demo data could not be read. Sample data has been restored.", "error");
+  }
+  state.demoData = cloneDemoSeed();
+  saveDemoData(state.demoData);
+  return state.demoData;
+}
+
+function saveDemoData(data) {
+  state.demoData = data;
+  try {
+    localStorage.setItem(DEMO_STORE_KEY, JSON.stringify(data));
+  } catch {
+    showToast("Demo changes cannot be saved in this browser. They will be lost when this page closes.", "error");
+  }
+}
+
+function activateDemoMode() {
+  state.apiOnline = false;
+  state.demoMode = true;
+  setSystemStatus(false, true);
+}
+
+function demoNotice(message, includeReset = false) {
+  return `
+    <div class="demo-notice" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">science</span>
+      <div><strong>DEMO MODE</strong><span>${escapeHtml(message)}</span></div>
+      <span class="demo-tag">SAMPLE DATA</span>
+      ${includeReset ? '<button type="button" class="demo-reset-button" id="reset-demo-data">Reset sample data</button>' : ""}
+    </div>
+  `;
 }
 
 function readStorage(key) {
@@ -173,6 +315,7 @@ function safeQuestions(questions) {
 
 function persistActiveSession() {
   if (!state.document && !state.quiz) return;
+  if (state.quiz) syncCurrentQuestionTime();
   writeStorage(ACTIVE_SESSION_KEY, {
     document: state.document,
     quiz: state.quiz ? {
@@ -181,6 +324,7 @@ function persistActiveSession() {
       mode: state.quiz.mode,
       difficulty: state.quiz.difficulty,
       questions: safeQuestions(state.quiz.questions),
+      is_demo: Boolean(state.quiz.is_demo),
     } : null,
     answers: state.answers,
     flags: state.flags,
@@ -189,6 +333,9 @@ function persistActiveSession() {
     startedAt: state.startedAt,
     deadline: state.deadline,
     timeoutReached: state.timeoutReached,
+    questionTimeRemaining: state.questionTimeRemaining,
+    currentQuestionStartedAt: state.currentQuestionStartedAt,
+    demoCorrectAnswers: state.demoCorrectAnswers,
   });
 }
 
@@ -204,6 +351,22 @@ function restoreSession() {
   state.startedAt = Number(saved.startedAt) || null;
   state.deadline = Number(saved.deadline) || null;
   state.timeoutReached = Boolean(saved.timeoutReached);
+  state.questionTimeRemaining = saved.questionTimeRemaining && typeof saved.questionTimeRemaining === "object"
+    ? saved.questionTimeRemaining
+    : {};
+  state.currentQuestionStartedAt = Number(saved.currentQuestionStartedAt) || null;
+  state.demoCorrectAnswers = saved.demoCorrectAnswers && typeof saved.demoCorrectAnswers === "object"
+    ? saved.demoCorrectAnswers
+    : {};
+  if (state.quiz?.is_demo || state.document?.is_demo) state.demoMode = true;
+  if (state.quiz && Array.isArray(state.quiz.questions)) {
+    state.quiz.questions.forEach((question) => {
+      if (!Number.isFinite(Number(state.questionTimeRemaining[question.id]))) {
+        state.questionTimeRemaining[question.id] = QUESTION_TIME_LIMIT;
+      }
+    });
+    if (!state.currentQuestionStartedAt) state.currentQuestionStartedAt = Date.now();
+  }
   state.lastResult = readStorage(LAST_RESULT_KEY);
 
   if (state.quiz && (!Array.isArray(state.quiz.questions) || !state.quiz.quiz_id)) {
@@ -219,7 +382,10 @@ function clearActiveSession() {
   state.currentQuestion = 0;
   state.startedAt = null;
   state.deadline = null;
+  state.questionTimeRemaining = {};
+  state.currentQuestionStartedAt = null;
   state.timeoutReached = false;
+  state.demoCorrectAnswers = {};
   state.isSubmitting = false;
   if (state.timerId) window.clearInterval(state.timerId);
   state.timerId = null;
@@ -230,11 +396,32 @@ function clearActiveSession() {
   }
 }
 
-function dashboardTemplate(items) {
+function uploadedDocumentsTemplate(documents, demoMode) {
+  if (!documents.length) {
+    return `<div class="documents-empty"><span class="material-symbols-outlined" aria-hidden="true">folder_open</span><span>No uploaded documents yet. Upload a PDF to get started.</span><a class="panel-action" href="#upload">Upload PDF</a></div>`;
+  }
+  return `
+    <div class="document-list">
+      ${documents.slice(0, 5).map((item) => `
+        <article class="document-row">
+          <span class="document-row-icon material-symbols-outlined" aria-hidden="true">picture_as_pdf</span>
+          <div class="document-row-info">
+            <strong title="${escapeHtml(item.filename)}">${escapeHtml(item.filename)}</strong>
+            <span>${escapeHtml(item.page_count)} pages · ${escapeHtml(formatAttemptDate(item.uploaded_at))}</span>
+          </div>
+          <span class="status-badge ${demoMode ? "badge-demo" : "accuracy-good"}">${demoMode ? "SAMPLE" : "READY"}</span>
+          ${demoMode ? `<button type="button" class="secondary-action" data-demo-doc-id="${escapeHtml(item.document_id)}">Start quiz</button>` : ""}
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+function dashboardTemplate(items, documents = [], demoMode = false) {
   const averageAccuracy = items.length
     ? items.reduce((sum, item) => sum + (Number(item.accuracy) || 0), 0) / items.length
     : 0;
-  const uniqueDocuments = new Set(items.map((item) => item.document_name).filter(Boolean)).size;
+  const uniqueDocuments = documents.length || new Set(items.map((item) => item.document_name).filter(Boolean)).size;
   const recentAttempts = items.slice(0, 5);
   const topAttempts = items.slice().sort((first, second) => {
     const accuracyDifference = attemptAccuracy(second) - attemptAccuracy(first);
@@ -292,6 +479,7 @@ function dashboardTemplate(items) {
           <a class="primary-action" href="#upload">Start a quiz</a>
         </aside>
       </div>
+      ${demoMode ? demoNotice("This sample workspace runs in your browser. PDF extraction and quiz scoring are simulated; no file is sent to a server.", true) : ""}
       <div class="stats-grid" aria-label="Recent quiz summary">
         <article class="stat-card">
           <div><span class="stat-label">Attempts loaded</span><span class="stat-value">${items.length}</span></div>
@@ -306,6 +494,13 @@ function dashboardTemplate(items) {
           <div class="stat-icon" aria-hidden="true"><span class="material-symbols-outlined">description</span></div>
         </article>
       </div>
+      <section class="recent-panel documents-panel" aria-labelledby="documents-title">
+        <header class="panel-header">
+          <div><h2 id="documents-title">Recent documents</h2><p>${demoMode ? "Sample PDFs available to try" : "Uploaded PDFs available in this session"}</p></div>
+          <a class="panel-action" href="#upload">Upload PDF</a>
+        </header>
+        ${uploadedDocumentsTemplate(documents, demoMode)}
+      </section>
       <section class="scoreboard-panel" aria-labelledby="scoreboard-title">
         <header class="panel-header">
           <div>
@@ -347,7 +542,7 @@ function dashboardTemplate(items) {
       </section>
       <section class="recent-panel" aria-labelledby="recent-title">
         <header class="panel-header">
-          <div><h2 id="recent-title">Recent attempts</h2><p>Most recent completed results returned by the API</p></div>
+          <div><h2 id="recent-title">Recent attempts</h2><p>${demoMode ? "Sample and simulated attempts saved in this browser" : "Most recent completed results returned by the API"}</p></div>
           <a class="panel-action" href="#history">View history</a>
         </header>
         <div class="attempt-list">${rows}</div>
@@ -356,15 +551,67 @@ function dashboardTemplate(items) {
   `;
 }
 
+function bindDashboardView(documents, demoMode) {
+  if (!demoMode) return;
+  document.getElementById("reset-demo-data")?.addEventListener("click", () => {
+    if (state.quiz?.is_demo && !window.confirm("Reset sample data and discard the active demo quiz?")) return;
+    if (state.quiz?.is_demo || state.document?.is_demo) clearActiveSession();
+    if (state.lastResult?.demo_mode) {
+      state.lastResult = null;
+      try {
+        sessionStorage.removeItem(LAST_RESULT_KEY);
+      } catch {
+        showToast("The previous demo result could not be cleared from session storage.", "error");
+      }
+    }
+    saveDemoData(cloneDemoSeed());
+    showToast("Sample documents and attempts were restored.", "success");
+    renderDashboard();
+  });
+  app.querySelectorAll("[data-demo-doc-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const selected = documents.find((item) => item.document_id === button.dataset.demoDocId);
+      if (!selected) {
+        showToast("That sample document is no longer available.", "error");
+        return;
+      }
+      if (state.quiz && !window.confirm("Starting another quiz will leave your current quiz. Continue?")) return;
+      clearActiveSession();
+      activateDemoMode();
+      state.document = { ...selected, is_demo: true };
+      state.selectedFile = null;
+      persistActiveSession();
+      window.location.hash = "#upload";
+    });
+  });
+}
+
 async function renderDashboard() {
   app.innerHTML = loadingTemplate("Loading dashboard");
+  if (state.demoMode) {
+    const data = getDemoData();
+    state.historyItems = data.attempts.slice().sort((a, b) => new Date(b.attempted_at) - new Date(a.attempted_at));
+    app.innerHTML = dashboardTemplate(state.historyItems, data.documents, true);
+    bindDashboardView(data.documents, true);
+    return;
+  }
   try {
     const payload = await requestJson(`/api/history?limit=${HISTORY_LIMIT}`);
     const items = Array.isArray(payload?.items) ? payload.items : [];
-    setSystemStatus(true);
-    app.innerHTML = dashboardTemplate(items);
+    state.apiOnline = true;
+    setSystemStatus(true, false);
+    app.innerHTML = dashboardTemplate(items, state.document ? [state.document] : [], false);
   } catch (error) {
-    setSystemStatus(false);
+    if (isConnectionError(error)) {
+      activateDemoMode();
+      const data = getDemoData();
+      state.historyItems = data.attempts.slice().sort((a, b) => new Date(b.attempted_at) - new Date(a.attempted_at));
+      app.innerHTML = dashboardTemplate(state.historyItems, data.documents, true);
+      bindDashboardView(data.documents, true);
+      return;
+    }
+    state.apiOnline = false;
+    setSystemStatus(false, false);
     app.innerHTML = `
       <section class="error-page-card">
         <span class="material-symbols-outlined" aria-hidden="true">cloud_off</span>
@@ -385,6 +632,7 @@ function uploadTemplate() {
   const activeDocument = state.document;
   return `
     <section class="page-section" aria-labelledby="upload-title">
+      ${state.demoMode ? demoNotice("Choose a PDF to simulate an upload. The browser will use clearly labeled sample text instead of sending or parsing the file.") : ""}
       <header class="page-banner">
         <div class="page-banner-icon"><span class="material-symbols-outlined" aria-hidden="true">upload_file</span></div>
         <div>
@@ -404,7 +652,7 @@ function uploadTemplate() {
             <span class="drop-icon material-symbols-outlined" aria-hidden="true">picture_as_pdf</span>
             <strong>Drop your PDF here</strong>
             <span>or <span class="link-text">browse files</span></span>
-            <span class="helper-label">Text-based PDFs only. Uploads are validated by the server.</span>
+            <span class="helper-label">${state.demoMode ? "Demo mode: file remains in this browser; sample content is used." : "Text-based PDFs only. Uploads are validated by the server."}</span>
           </div>
           <div class="selected-file ${state.selectedFile ? "visible" : ""}" id="selected-file" ${state.selectedFile ? "" : "hidden"}>
             <span class="material-symbols-outlined" aria-hidden="true">description</span>
@@ -424,7 +672,7 @@ function uploadTemplate() {
           ${activeDocument ? `
             <div class="document-success" role="status">
               <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
-              <div><strong>${escapeHtml(activeDocument.filename)}</strong><span>${escapeHtml(activeDocument.page_count)} pages · Ready to configure</span></div>
+              <div><strong>${escapeHtml(activeDocument.filename)}</strong><span>${escapeHtml(activeDocument.page_count)} pages · ${activeDocument.is_demo ? "Sample content · ready to configure" : "Ready to configure"}</span></div>
             </div>
           ` : ""}
         </section>
@@ -559,6 +807,23 @@ function uploadPdf(file, progressCallback) {
   });
 }
 
+async function simulateDemoUpload(file, progressCallback) {
+  progressCallback(20);
+  await new Promise((resolve) => window.setTimeout(resolve, 200));
+  progressCallback(70);
+  await new Promise((resolve) => window.setTimeout(resolve, 250));
+  progressCallback(100);
+  return {
+    document_id: `demo-upload-${Date.now()}`,
+    filename: file.name,
+    page_count: 8,
+    extraction_status: "DEMO SAMPLE · NOT EXTRACTED",
+    text_preview: DEMO_SOURCE_TEXT,
+    uploaded_at: new Date().toISOString(),
+    is_demo: true,
+  };
+}
+
 async function handleUpload() {
   const file = state.selectedFile;
   const validationError = validatePdf(file);
@@ -578,29 +843,48 @@ async function handleUpload() {
   displayFormError("upload-error", "");
 
   try {
-    const result = await uploadPdf(file, (percentage) => {
+    const progressCallback = (percentage) => {
       progressBar.style.width = `${percentage}%`;
       progressValue.textContent = `${percentage}%`;
-      if (percentage >= 100) status.textContent = "Extracting document text…";
-    });
+      if (percentage >= 100) status.textContent = state.demoMode ? "Preparing sample preview…" : "Extracting document text…";
+    };
+    const result = state.demoMode
+      ? await simulateDemoUpload(file, progressCallback)
+      : await uploadPdf(file, progressCallback);
     state.document = {
       document_id: result.document_id,
       filename: result.filename || file.name,
       page_count: result.page_count ?? 0,
       extraction_status: result.extraction_status || "success",
       text_preview: result.text_preview || "",
+      uploaded_at: result.uploaded_at || new Date().toISOString(),
+      is_demo: Boolean(result.is_demo),
     };
+    if (state.document.is_demo) {
+      const demoData = getDemoData();
+      demoData.documents = [state.document, ...demoData.documents.filter((item) => item.document_id !== state.document.document_id)];
+      saveDemoData(demoData);
+    }
     state.selectedFile = null;
     persistActiveSession();
-    showToast("PDF uploaded and extracted successfully.", "success");
+    showToast(state.document.is_demo
+      ? "Demo upload ready. No PDF was sent or parsed; sample text is being used."
+      : "PDF uploaded and extracted successfully.", "success");
     renderUpload();
   } catch (error) {
+    if (isConnectionError(error)) {
+      activateDemoMode();
+      renderUpload();
+      showToast("Backend is unavailable. Demo mode is active; upload again to use sample content.", "info", 7000);
+      return;
+    }
     displayFormError("upload-error", error.message);
     button.disabled = false;
     button.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">cloud_upload</span> Try upload again';
     status.textContent = "Upload failed";
     progressBar.classList.add("progress-bar-error");
-    setSystemStatus(false);
+    state.apiOnline = false;
+    setSystemStatus(false, false);
   }
 }
 
@@ -610,6 +894,37 @@ function setSegmentSelection(button, selector) {
     item.classList.toggle("selected", selected);
     item.setAttribute("aria-pressed", String(selected));
   });
+}
+
+function createDemoQuiz(count, difficulty, mode) {
+  const documentId = state.document.document_id || "";
+  const filename = (state.document.filename || "").toLowerCase();
+  const bank = documentId.includes("chemistry") || filename.includes("chemistry")
+    ? DEMO_CHEMISTRY_QUESTION_BANK
+    : documentId.includes("history") || filename.includes("history")
+      ? DEMO_HISTORY_QUESTION_BANK
+      : DEMO_QUESTION_BANK;
+  const selectedQuestions = bank.slice(0, Math.min(count, bank.length));
+  if (selectedQuestions.length < count) {
+    showToast(`The demo question bank has ${selectedQuestions.length} questions, so the quiz will use that many.`, "info", 6000);
+  }
+  const questions = selectedQuestions.map((question, index) => ({
+    ...question,
+    id: `demo-question-${Date.now()}-${index + 1}`,
+  }));
+  const demoCorrectAnswers = Object.fromEntries(questions.map((question) => [
+    question.id,
+    { option_id: question.correct_option_id, explanation: question.explanation },
+  ]));
+  return {
+    quiz_id: `demo-quiz-${Date.now()}`,
+    document_id: state.document.document_id,
+    mode,
+    difficulty,
+    is_demo: true,
+    questions,
+    demoCorrectAnswers,
+  };
 }
 
 async function handleGenerate(event) {
@@ -631,16 +946,18 @@ async function handleGenerate(event) {
   button.innerHTML = '<span class="material-symbols-outlined spinning" aria-hidden="true">progress_activity</span> Generating questions';
 
   try {
-    const result = await requestJson("/api/generate-quiz", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        document_id: state.document.document_id,
-        question_count: count,
-        difficulty,
-        mode,
-      }),
-    });
+    const result = state.demoMode
+      ? createDemoQuiz(count, difficulty, mode)
+      : await requestJson("/api/generate-quiz", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            document_id: state.document.document_id,
+            question_count: count,
+            difficulty,
+            mode,
+          }),
+        });
     const questions = safeQuestions(result?.questions);
     if (!result?.quiz_id || !questions.length) {
       throw new Error("The server did not return a quiz with any questions. Try fewer questions or a different PDF.");
@@ -657,22 +974,32 @@ async function handleGenerate(event) {
       mode: result.mode || mode,
       difficulty: result.difficulty || difficulty,
       questions,
+      is_demo: Boolean(result.is_demo),
     };
+    state.demoCorrectAnswers = result.demoCorrectAnswers || {};
     state.answers = {};
     state.flags = [];
     state.currentQuestion = 0;
+    state.questionTimeRemaining = Object.fromEntries(questions.map((question) => [question.id, QUESTION_TIME_LIMIT]));
     state.durationSeconds = durationSeconds;
     state.startedAt = Date.now();
     state.deadline = state.startedAt + durationSeconds * 1000;
+    state.currentQuestionStartedAt = state.startedAt;
     state.timeoutReached = false;
     state.isSubmitting = false;
     persistActiveSession();
     window.location.hash = "#quiz";
   } catch (error) {
+    if (isConnectionError(error)) {
+      activateDemoMode();
+      displayFormError("generate-error", "Backend unavailable. Demo mode is now active; select Generate quiz again to create a clearly labeled sample quiz.");
+      button.disabled = false;
+      button.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">bolt</span> Generate demo quiz';
+      return;
+    }
     displayFormError("generate-error", error.message);
     button.disabled = false;
     button.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">bolt</span> Try generating again';
-    if (error.message.includes("connect to the Grimoire API")) setSystemStatus(false);
   }
 }
 
@@ -680,6 +1007,7 @@ function quizTemplate() {
   const quiz = state.quiz;
   const question = quiz.questions[state.currentQuestion];
   const total = quiz.questions.length;
+  const questionRemaining = getCurrentQuestionRemaining();
   const answeredCount = Object.keys(state.answers).length;
   const isFlagged = state.flags.includes(question.id);
   const options = question.options.map((option) => {
@@ -695,9 +1023,10 @@ function quizTemplate() {
 
   const navigator = quiz.questions.map((item, index) => {
     const answered = Object.prototype.hasOwnProperty.call(state.answers, item.id);
+    const expired = Number(state.questionTimeRemaining[item.id]) <= 0;
     return `
-      <button type="button" class="question-number ${index === state.currentQuestion ? "current" : ""} ${answered ? "answered" : ""} ${state.flags.includes(item.id) ? "flagged" : ""}"
-        data-question-index="${index}" aria-label="Go to question ${index + 1}${answered ? ", answered" : ", unanswered"}${state.flags.includes(item.id) ? ", flagged" : ""}"
+      <button type="button" class="question-number ${index === state.currentQuestion ? "current" : ""} ${answered ? "answered" : ""} ${expired ? "expired" : ""} ${state.flags.includes(item.id) ? "flagged" : ""}"
+        data-question-index="${index}" ${expired ? "disabled" : ""} aria-label="Go to question ${index + 1}${answered ? ", answered" : ", unanswered"}${expired ? ", time expired" : ""}${state.flags.includes(item.id) ? ", flagged" : ""}"
         aria-current="${index === state.currentQuestion ? "step" : "false"}">
         ${index + 1}
       </button>
@@ -708,13 +1037,20 @@ function quizTemplate() {
     <section class="page-section quiz-page" aria-labelledby="quiz-title">
       <header class="quiz-status-bar">
         <div class="quiz-heading">
+          ${quiz.is_demo ? '<span class="badge badge-demo">DEMO · BROWSER SCORED</span>' : ""}
           <span class="badge badge-primary">${escapeHtml((quiz.mode || "exam").toUpperCase())} MODE</span>
           <h1 id="quiz-title">${escapeHtml(state.document?.filename || "Active quiz")}</h1>
-          <span class="helper-label">${total} QUESTIONS · ${escapeHtml(capitalize(quiz.difficulty || "medium"))}</span>
+          <span class="helper-label">${total} QUESTIONS · ${escapeHtml(capitalize(quiz.difficulty || "medium"))} · 60 SEC / QUESTION</span>
         </div>
-        <div class="timer-card" role="timer" aria-label="Time remaining">
-          <span class="material-symbols-outlined" aria-hidden="true">timer</span>
-          <div><span class="timer-label">TIME REMAINING</span><strong id="countdown-timer">${formatDuration(Math.ceil(Math.max(0, state.deadline - Date.now()) / 1000))}</strong></div>
+        <div class="timer-stack">
+          <div class="timer-card question-timer-card" role="timer" aria-label="Time remaining for this question">
+            <span class="material-symbols-outlined" aria-hidden="true">hourglass_top</span>
+            <div><span class="timer-label">QUESTION TIME</span><strong id="question-countdown-timer">${formatDuration(questionRemaining)}</strong></div>
+          </div>
+          <div class="timer-card session-timer-card" role="timer" aria-label="Total quiz time remaining">
+            <span class="material-symbols-outlined" aria-hidden="true">timer</span>
+            <div><span class="timer-label">QUIZ TIME</span><strong id="countdown-timer">${formatDuration(Math.ceil(Math.max(0, state.deadline - Date.now()) / 1000))}</strong></div>
+          </div>
         </div>
       </header>
       <div class="quiz-layout">
@@ -769,38 +1105,132 @@ function setAnswer(questionId, optionId) {
 
 function startQuizTimer() {
   if (!state.quiz || !state.deadline) return;
-  if (state.deadline <= Date.now()) {
-    const timer = document.getElementById("countdown-timer");
-    if (timer) timer.textContent = "00:00";
-    if (!state.timeoutReached && !state.isSubmitting) {
-      state.timeoutReached = true;
-      persistActiveSession();
-      submitQuiz(true);
-    }
-    return;
-  }
+  if (!state.currentQuestionStartedAt) state.currentQuestionStartedAt = Date.now();
   state.timerId = window.setInterval(() => {
-    const remaining = Math.max(0, Math.ceil((state.deadline - Date.now()) / 1000));
-    const timer = document.getElementById("countdown-timer");
-    if (timer) {
-      timer.textContent = formatDuration(remaining);
-      timer.classList.toggle("timer-warning", remaining <= 60);
+    if (!state.quiz || state.isSubmitting) {
+      window.clearInterval(state.timerId);
+      state.timerId = null;
+      return;
     }
-    if (remaining <= 0 && !state.timeoutReached) {
+    const now = Date.now();
+    const totalRemaining = Math.max(0, Math.ceil((state.deadline - now) / 1000));
+    const totalTimer = document.getElementById("countdown-timer");
+    if (totalTimer) {
+      totalTimer.textContent = formatDuration(totalRemaining);
+      totalTimer.classList.toggle("timer-warning", totalRemaining <= 60);
+    }
+    if (totalRemaining <= 0 && !state.timeoutReached) {
       state.timeoutReached = true;
       persistActiveSession();
       window.clearInterval(state.timerId);
       state.timerId = null;
       submitQuiz(true);
+      return;
     }
+
+    const questionRemaining = syncCurrentQuestionTime(now);
+    const questionTimer = document.getElementById("question-countdown-timer");
+    if (questionTimer) {
+      questionTimer.textContent = formatDuration(questionRemaining);
+      questionTimer.classList.toggle("timer-warning", questionRemaining <= 10);
+    }
+    if (questionRemaining <= 0) {
+      expireCurrentQuestion();
+      return;
+    }
+    persistActiveSession();
   }, 1000);
+}
+
+function nextAvailableQuestionIndex() {
+  if (!state.quiz) return -1;
+  const total = state.quiz.questions.length;
+  for (let offset = 1; offset < total; offset += 1) {
+    const index = (state.currentQuestion + offset) % total;
+    const questionId = state.quiz.questions[index].id;
+    if (Number(state.questionTimeRemaining[questionId]) > 0) return index;
+  }
+  return -1;
+}
+
+function expireCurrentQuestion() {
+  if (!state.quiz || state.isSubmitting) return;
+  const currentQuestion = state.quiz.questions[state.currentQuestion];
+  state.questionTimeRemaining[currentQuestion.id] = 0;
+  const nextIndex = nextAvailableQuestionIndex();
+  if (nextIndex < 0) {
+    state.timeoutReached = true;
+    persistActiveSession();
+    if (state.timerId) window.clearInterval(state.timerId);
+    state.timerId = null;
+    submitQuiz(true);
+    return;
+  }
+  if (state.timerId) window.clearInterval(state.timerId);
+  state.timerId = null;
+  state.currentQuestion = nextIndex;
+  state.currentQuestionStartedAt = Date.now();
+  persistActiveSession();
+  showToast(`Time is up for question ${state.quiz.questions.findIndex((item) => item.id === currentQuestion.id) + 1}. Moving to the next question.`, "info", 3500);
+  renderQuiz();
 }
 
 function goToQuestion(index) {
   if (!state.quiz) return;
-  state.currentQuestion = Math.max(0, Math.min(index, state.quiz.questions.length - 1));
+  syncCurrentQuestionTime();
+  const nextIndex = Math.max(0, Math.min(index, state.quiz.questions.length - 1));
+  const nextQuestion = state.quiz.questions[nextIndex];
+  if (Number(state.questionTimeRemaining[nextQuestion.id]) <= 0) {
+    showToast("Time has expired for that question.", "error");
+    return;
+  }
+  if (state.timerId) window.clearInterval(state.timerId);
+  state.timerId = null;
+  state.currentQuestion = nextIndex;
+  state.currentQuestionStartedAt = Date.now();
   persistActiveSession();
   renderQuiz();
+}
+
+function evaluateDemoQuiz(questions, answers, timeTaken) {
+  const selectedAnswers = Object.fromEntries(answers.map((answer) => [answer.question_id, answer.option_id]));
+  const review = questions.map((question) => {
+    const key = state.demoCorrectAnswers[question.id];
+    if (!key?.option_id) throw new Error("The saved demo answer key is missing. Restart this sample quiz before submitting.");
+    const selectedOptionId = selectedAnswers[question.id] || null;
+    return {
+      question_id: question.id,
+      selected_option_id: selectedOptionId,
+      correct_option_id: key.option_id,
+      is_correct: selectedOptionId === key.option_id,
+      explanation: key.explanation || "",
+    };
+  });
+  const correct = review.filter((item) => item.is_correct).length;
+  const answered = review.filter((item) => item.selected_option_id).length;
+  const total = questions.length;
+  const result = {
+    attempt_id: Date.now(),
+    score: correct,
+    total_questions: total,
+    accuracy: total ? (correct / total) * 100 : 0,
+    correct,
+    incorrect: answered - correct,
+    unanswered: total - answered,
+    time_taken_seconds: timeTaken,
+    review,
+  };
+  const demoData = getDemoData();
+  demoData.attempts.unshift({
+    attempt_id: result.attempt_id,
+    document_name: state.document?.filename || "Demo document",
+    score: result.score,
+    total_questions: result.total_questions,
+    accuracy: result.accuracy,
+    attempted_at: new Date().toISOString(),
+  });
+  saveDemoData(demoData);
+  return result;
 }
 
 async function submitQuiz(isTimeout = false) {
@@ -829,20 +1259,23 @@ async function submitQuiz(isTimeout = false) {
     mode: state.quiz.mode,
     difficulty: state.quiz.difficulty,
     questions: safeQuestions(state.quiz.questions),
+    is_demo: Boolean(state.quiz.is_demo),
   };
   const documentName = state.document?.filename || "Untitled document";
   const answers = Object.entries(state.answers).map(([question_id, option_id]) => ({ question_id, option_id }));
 
   try {
-    const result = await requestJson("/api/submit-quiz", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        quiz_id: state.quiz.quiz_id,
-        answers,
-        time_taken_seconds: timeTaken,
-      }),
-    });
+    const result = quizSnapshot.is_demo
+      ? evaluateDemoQuiz(quizSnapshot.questions, answers, timeTaken)
+      : await requestJson("/api/submit-quiz", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            quiz_id: state.quiz.quiz_id,
+            answers,
+            time_taken_seconds: timeTaken,
+          }),
+        });
     if (!Number.isFinite(Number(result?.total_questions)) || !Number.isFinite(Number(result?.score))) {
       throw new Error("The server returned an invalid result. Your quiz state has been retained; contact support before resubmitting.");
     }
@@ -851,11 +1284,12 @@ async function submitQuiz(isTimeout = false) {
       document_name: documentName,
       mode: quizSnapshot.mode,
       quiz: quizSnapshot,
+      demo_mode: quizSnapshot.is_demo,
     };
     writeStorage(LAST_RESULT_KEY, state.lastResult);
     clearActiveSession();
     state.lastResult = readStorage(LAST_RESULT_KEY);
-    setSystemStatus(true);
+    setSystemStatus(state.apiOnline, state.demoMode);
     window.location.hash = "#results";
   } catch (error) {
     state.isSubmitting = false;
@@ -904,8 +1338,9 @@ function resultsTemplate(result) {
     <section class="page-section results-page" aria-labelledby="results-title">
       <header class="page-banner results-banner">
         <div class="page-banner-icon"><span class="material-symbols-outlined" aria-hidden="true">emoji_events</span></div>
-        <div><span class="eyebrow">ASSESSMENT COMPLETE</span><h1 id="results-title">Your results</h1><p>${escapeHtml(result.document_name || "Quiz")} · Attempt #${escapeHtml(result.attempt_id ?? "—")}</p></div>
+        <div><span class="eyebrow">${result.demo_mode ? "DEMO RESULT · SCORED IN THIS BROWSER" : "ASSESSMENT COMPLETE"}</span><h1 id="results-title">Your results</h1><p>${escapeHtml(result.document_name || "Quiz")} · Attempt #${escapeHtml(result.attempt_id ?? "—")}</p></div>
       </header>
+      ${result.demo_mode ? demoNotice("This score was calculated in your browser using sample questions. It is not a server-verified result.") : ""}
       <div class="result-summary">
         <article class="result-score-card">
           <span class="stat-label">Score</span>
@@ -1016,7 +1451,8 @@ function renderHistoryContent() {
 async function renderHistory() {
   app.innerHTML = `
     <section class="page-section">
-      <header class="page-banner"><div class="page-banner-icon"><span class="material-symbols-outlined" aria-hidden="true">history</span></div><div><span class="eyebrow">YOUR PROGRESS</span><h1>Quiz history</h1><p>Results saved by the Grimoire backend.</p></div></header>
+      ${state.demoMode ? demoNotice("Sample attempts and demo scores are stored only in this browser.") : ""}
+      <header class="page-banner"><div class="page-banner-icon"><span class="material-symbols-outlined" aria-hidden="true">history</span></div><div><span class="eyebrow">YOUR PROGRESS</span><h1>Quiz history</h1><p>${state.demoMode ? "Local sample and simulated results." : "Results saved by the Grimoire backend."}</p></div></header>
       <section class="panel history-panel">
         <div class="history-toolbar">
           <label class="search-control"><span class="material-symbols-outlined" aria-hidden="true">search</span><span class="visually-hidden">Filter by document name</span><input id="history-filter" type="search" placeholder="Filter by document…" value="${escapeHtml(state.historyFilter)}"></label>
@@ -1038,12 +1474,24 @@ async function renderHistory() {
     renderHistoryContent();
   });
 
+  if (state.demoMode) {
+    state.historyItems = getDemoData().attempts.slice();
+    renderHistoryContent();
+    return;
+  }
+
   try {
     const payload = await requestJson(`/api/history?limit=${HISTORY_LIMIT}`);
     state.historyItems = Array.isArray(payload?.items) ? payload.items : [];
-    setSystemStatus(true);
+    state.apiOnline = true;
+    setSystemStatus(true, false);
     renderHistoryContent();
   } catch (error) {
+    if (isConnectionError(error)) {
+      activateDemoMode();
+      renderHistory();
+      return;
+    }
     const container = document.getElementById("history-results");
     container.innerHTML = `
       <div class="error-inline" role="alert">
@@ -1053,7 +1501,8 @@ async function renderHistory() {
       </div>
     `;
     document.getElementById("history-retry").addEventListener("click", renderHistory);
-    setSystemStatus(false);
+    state.apiOnline = false;
+    setSystemStatus(false, false);
   }
 }
 
@@ -1188,6 +1637,15 @@ window.addEventListener("beforeunload", (event) => {
   event.returnValue = "";
 });
 
-restoreSession();
-checkSystemStatus();
-resolveRoute();
+async function initializeApp() {
+  restoreSession();
+  if (FORCE_DEMO_MODE) {
+    if (state.quiz && !state.quiz.is_demo) clearActiveSession();
+    activateDemoMode();
+  } else {
+    await checkSystemStatus();
+  }
+  resolveRoute();
+}
+
+initializeApp();
