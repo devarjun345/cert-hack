@@ -2193,6 +2193,18 @@ window.addEventListener("beforeunload", (event) => {
   event.returnValue = "";
 });
 
+function dismissStartupScreen() {
+  const startupScreen = document.getElementById("startup-screen");
+  if (!startupScreen) return;
+  const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 650 : 2450;
+  window.setTimeout(() => {
+    startupScreen.classList.add("is-leaving");
+    window.setTimeout(() => {
+      startupScreen.hidden = true;
+    }, 450);
+  }, delay);
+}
+
 async function initializeApp() {
   restoreSession();
   restoreDemoStudent();
@@ -2209,4 +2221,5 @@ async function initializeApp() {
   resolveRoute();
 }
 
+dismissStartupScreen();
 initializeApp();
