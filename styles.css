@@ -15,6 +15,7 @@
   --error: #ba1a1a;
   --muted: #5a413a;
   --outline: #8e7069;
+  --focus-ring: #006672;
   --shadow-sm: 2px 2px 0 var(--black);
   --shadow-md: 4px 4px 0 var(--black);
   --shadow-lg: 6px 6px 0 var(--black);
@@ -46,6 +47,11 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+:where(a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
 }
 
 button,
@@ -2024,7 +2030,7 @@ a {
 .secondary-action:focus-visible,
 .question-number:focus-visible,
 .answer-option:focus-within {
-  outline: 3px solid #006672;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -3755,7 +3761,7 @@ a {
 }
 
 @media (max-width: 860px) {
-  .login-main { min-height: auto; grid-template-columns: 1fr; }
+  .login-main { width: 100%; min-width: 0; min-height: auto; grid-template-columns: minmax(0, 1fr); }
   .login-hero { min-height: 700px; border-right: 0; border-bottom: 3px solid #211a17; padding: 30px clamp(22px, 6vw, 54px) 24px; }
   .login-hero-copy { margin: 78px 0 42px; }
   .login-hero-copy h1 { font-size: clamp(54px, 9vw, 78px); }
@@ -3768,21 +3774,21 @@ a {
 }
 
 @media (max-width: 560px) {
-  .login-hero { min-height: 740px; padding: 22px 18px 20px; }
+  .login-hero { width: 100%; min-width: 0; min-height: 740px; padding: 22px 18px 20px; }
   .login-brand { font-size: 16px; }
   .login-brand-icon { width: 35px; height: 35px; }
-  .login-prompt { max-width: 160px; padding: 8px 9px; }
-  .login-prompt strong { font-size: 10px; }
-  .login-hero-copy { margin: 95px 0 34px; }
-  .login-hero-copy h1 { font-size: clamp(43px, 12vw, 60px); }
+  .login-prompt,
+  .login-sticker,
+  .login-diamond { display: none; }
+  .login-hero-copy { max-width: 100%; margin: 82px 0 34px; }
+  .login-hero-copy h1 { font-size: clamp(36px, 10.5vw, 46px); line-height: 1; }
   .login-hero-copy p { max-width: 330px; font-size: 14px; }
-  .login-sun { top: 22%; right: 9%; width: 54px; height: 54px; }
-  .login-sun span { font-size: 20px; }
-  .login-focus { top: 34%; right: 5%; }
-  .login-streak { top: 43%; right: 2%; }
-  .login-diamond { top: 31%; right: 26%; width: 23px; height: 23px; }
-  .login-feature-grid { grid-template-columns: 1fr; }
-  .login-feature-card { height: 72px; }
+  .login-sun { top: 19px; right: 20px; width: 44px; height: 44px; }
+  .login-sun span { font-size: 17px; }
+  .login-feature-area,
+  .login-feature-grid { width: 100%; min-width: 0; }
+  .login-feature-grid { grid-template-columns: minmax(0, 1fr); }
+  .login-feature-card { width: 100%; max-width: 100%; height: 72px; }
   .login-feature-face { padding: 9px 11px; }
   .login-feature-icon { width: 34px; height: 34px; flex-basis: 34px; }
   .login-feature-copy strong { font-size: 11px; }

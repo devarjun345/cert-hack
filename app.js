@@ -430,7 +430,7 @@ function renderAuthPage(mode = "login") {
           </div>
           <footer class="login-hero-footer">© <span id="login-current-year"></span> GRIMOIRE LEARNING</footer>
         </section>
-        <main class="login-panel" aria-label="Student account">
+        <section class="login-panel" aria-label="Student account">
           <span class="login-spark login-spark-one" aria-hidden="true">✦</span>
           <span class="login-spark login-spark-two" aria-hidden="true"></span>
           <div class="login-card-perspective">
@@ -487,7 +487,7 @@ function renderAuthPage(mode = "login") {
               </section>
             </div>
           </div>
-        </main>
+        </section>
       </div>
       <section class="login-marquee" aria-label="Study inspiration">
         <div class="login-marquee-track"><span>★ BUILD YOUR STREAK</span><i>•</i><span>⚡ PRACTICE WITH PURPOSE</span><i>•</i><span>✦ REVIEW. RETRY. RISE.</span><i>•</i><span>📖 MAKE TIME TO LEARN</span><i>•</i><span>★ BUILD YOUR STREAK</span><i>•</i><span>⚡ PRACTICE WITH PURPOSE</span><i>•</i></div>
@@ -2137,10 +2137,16 @@ function renderQuiz() {
   if (!state.timerId) startQuizTimer();
 }
 
-function closeSidebar() {
+function closeSidebar(restoreFocus = false) {
+  const wasOpen = sidebar.classList.contains("open");
   sidebar.classList.remove("open");
   sidebarOverlay.classList.remove("open");
   document.body.style.overflow = "";
+  menuButton.setAttribute("aria-expanded", "false");
+  const isMobile = window.matchMedia("(max-width: 780px)").matches;
+  sidebar.inert = isMobile;
+  sidebar.setAttribute("aria-hidden", String(isMobile));
+  if (restoreFocus && wasOpen) menuButton.focus();
 }
 
 function setActiveRoute(route) {
@@ -2165,7 +2171,7 @@ function resolveRoute() {
     if (window.location.hash !== "#dashboard") window.location.hash = "#dashboard";
   }
   setActiveRoute(route);
-  closeSidebar();
+  closeSidebar(true);
   const titles = { login: "Student Sign In", signup: "Student Sign Up", dashboard: "Dashboard", upload: "Upload PDF", quiz: "Active Quiz", results: "Results", history: "Quiz History", profile: "Student Profile" };
   document.title = `Grimoire - ${titles[route]}`;
 
@@ -2179,12 +2185,22 @@ function resolveRoute() {
 }
 
 menuButton.addEventListener("click", () => {
+  sidebar.inert = false;
+  sidebar.setAttribute("aria-hidden", "false");
   sidebar.classList.add("open");
   sidebarOverlay.classList.add("open");
   document.body.style.overflow = "hidden";
+  menuButton.setAttribute("aria-expanded", "true");
+  sidebarClose.focus();
 });
-sidebarClose.addEventListener("click", closeSidebar);
-sidebarOverlay.addEventListener("click", closeSidebar);
+sidebarClose.addEventListener("click", () => closeSidebar(true));
+sidebarOverlay.addEventListener("click", () => closeSidebar(true));
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && sidebar.classList.contains("open")) closeSidebar(true);
+});
+window.addEventListener("resize", () => {
+  if (window.matchMedia("(min-width: 781px)").matches) closeSidebar();
+});
 signOutButton.addEventListener("click", signOutStudent);
 window.addEventListener("hashchange", resolveRoute);
 window.addEventListener("beforeunload", (event) => {
