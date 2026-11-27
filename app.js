@@ -10,6 +10,13 @@ const DEMO_USERS_KEY = "grimoire.demo-users.v1";
 const DEMO_AUTH_LOCAL_KEY = "grimoire.demo-student.local.v1";
 const DEMO_AUTH_SESSION_KEY = "grimoire.demo-student.session.v1";
 const STUDENT_ATTEMPTS_KEY = "grimoire.student-attempts.v1";
+const STUDENT_GOALS = [
+  "MCAT / Pre-Med",
+  "AP Biology & Chemistry",
+  "Computer Science & Algorithms",
+  "Law School & LSAT",
+  "General High School / College",
+];
 const FORCE_DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 
 const DEMO_SOURCE_TEXT = "Cells are the basic units of life. The cell membrane regulates what enters and leaves a cell. In eukaryotic cells, the nucleus stores DNA, mitochondria produce most usable cellular energy, and chloroplasts carry out photosynthesis in plants. Ribosomes build proteins. During photosynthesis, plants use light energy, water, and carbon dioxide to produce glucose and oxygen.";
@@ -355,167 +362,230 @@ function saveDemoStudent(student, rememberMe) {
 }
 
 function renderAuthPage(mode = "login") {
-  const isSignup = mode === "signup";
   const notice = state.authNotice;
   state.authNotice = "";
   app.innerHTML = `
-    <section class="auth-page" aria-labelledby="auth-title">
-      <div class="auth-visual">
-        <div class="auth-brand"><span class="material-symbols-outlined">menu_book</span> GRIMOIRE</div>
-        <div class="auth-visual-copy">
-          <span class="badge badge-tertiary">STUDENT STUDY SPACE</span>
-          <h1>Make every study session count.</h1>
-          <p>Keep your practice scores and quiz history together in a simple student profile.</p>
-        </div>
-        <div class="auth-feature-list">
-          <div><span class="material-symbols-outlined">history</span><span><strong>Your quiz history</strong><small>Pick up where your progress left off.</small></span></div>
-          <div><span class="material-symbols-outlined">emoji_events</span><span><strong>See your progress</strong><small>Review scores and celebrate small wins.</small></span></div>
-          <div><span class="material-symbols-outlined">timer</span><span><strong>Practice at your pace</strong><small>Use timed quizzes and sample documents.</small></span></div>
-        </div>
-        <span class="auth-visual-footnote">FRONTEND DEMO · SAVED ON THIS DEVICE</span>
-      </div>
-      <div class="auth-content">
-        <div class="auth-mobile-brand"><span class="material-symbols-outlined">menu_book</span> GRIMOIRE</div>
-        <section class="auth-card">
-          <div class="auth-card-heading">
-            <span class="eyebrow">${isSignup ? "CREATE YOUR STUDENT SPACE" : "WELCOME BACK, STUDENT"}</span>
-            <h2 id="auth-title">${isSignup ? "Create your profile" : "Sign in to study"}</h2>
-            <p>${isSignup ? "Set up a profile to keep your quiz attempts connected." : "Use your student email to continue to your study space."}</p>
+    <section class="login-scene" aria-label="Grimoire student sign in">
+      <div class="login-main">
+        <section class="login-hero" aria-labelledby="login-hero-title">
+          <div class="login-sun" aria-hidden="true"><span>✦</span><i>READY</i></div>
+          <div class="login-sticker login-streak" aria-hidden="true"><span>✦</span> YOUR NEXT STREAK STARTS NOW</div>
+          <div class="login-sticker login-focus" aria-hidden="true"><span>↗</span> ONE QUESTION AT A TIME</div>
+          <div class="login-diamond" aria-hidden="true"><i></i></div>
+          <div class="login-brand-row">
+            <a class="login-brand" href="#login" aria-label="Grimoire sign in">
+              <span class="login-brand-icon"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span></span>
+              <span>GRIMOIRE</span>
+            </a>
+            <div class="login-prompt"><span>NOW LEARNING</span><strong id="login-typewriter">Cell structure review</strong><i aria-hidden="true"></i></div>
           </div>
-          <nav class="auth-tabs" aria-label="Student account">
-            <a class="auth-tab ${isSignup ? "" : "active"}" href="#login" ${isSignup ? "" : 'aria-current="page"'}>Sign in</a>
-            <a class="auth-tab ${isSignup ? "active" : ""}" href="#signup" ${isSignup ? 'aria-current="page"' : ""}>Sign up</a>
-          </nav>
-          ${notice ? `<div class="auth-message" role="status">${escapeHtml(notice)}</div>` : ""}
-          <form id="student-auth-form" class="auth-form" novalidate>
-            ${isSignup ? `
-              <label class="auth-field" for="student-name">
-                <span>Your name</span>
-                <span class="auth-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">person</span><input id="student-name" name="name" type="text" autocomplete="name" placeholder="e.g. Alex Morgan" maxlength="60" required></span>
-              </label>
-            ` : ""}
-            <label class="auth-field" for="student-email">
-              <span>Student email</span>
-              <span class="auth-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">mail</span><input id="student-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required></span>
-            </label>
-            ${isSignup ? `
-              <label class="auth-field" for="student-goal">
-                <span>What are you studying for?</span>
-                <select id="student-goal" name="goal" class="select-control">
-                  <option value="Build a study habit">Build a study habit</option>
-                  <option value="Prepare for an exam">Prepare for an exam</option>
-                  <option value="Review class notes">Review class notes</option>
-                  <option value="Explore a new subject">Explore a new subject</option>
-                </select>
-              </label>
-            ` : ""}
-            <label class="auth-field" for="student-password">
-              <span>Password</span>
-              <span class="auth-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">lock</span><input id="student-password" name="password" type="password" autocomplete="${isSignup ? "new-password" : "current-password"}" placeholder="${isSignup ? "At least 8 characters" : "Enter any demo password"}" minlength="${isSignup ? "8" : "1"}" required><button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></button></span>
-            </label>
-            ${isSignup ? `
-              <div class="password-strength" aria-live="polite">
-                <div class="password-strength-track"><span id="password-strength-bar"></span></div>
-                <span id="password-strength-label">Use 8 or more characters.</span>
-              </div>
-              <label class="auth-field" for="student-password-confirm">
-                <span>Confirm password</span>
-                <span class="auth-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">lock_reset</span><input id="student-password-confirm" name="confirm_password" type="password" autocomplete="new-password" placeholder="Enter your password again" required></span>
-              </label>
-            ` : ""}
-            <label class="remember-control"><input name="remember" type="checkbox"><span>Keep me signed in on this device</span></label>
-            <p class="auth-demo-disclaimer"><span class="material-symbols-outlined" aria-hidden="true">info</span>Demo sign-in accepts any non-empty password. Passwords are never verified or saved in this browser.</p>
-            <div class="auth-error" id="auth-error" role="alert" hidden></div>
-            <button class="button button-primary auth-submit" type="submit">${isSignup ? "Create demo profile" : "Sign in to Grimoire"}<span class="material-symbols-outlined" aria-hidden="true">${isSignup ? "person_add" : "arrow_forward"}</span></button>
-          </form>
-          ${!isSignup ? `<div class="auth-divider"><span>OR TRY IT OUT</span></div><button class="button button-neutral auth-sample-button" id="sample-student-login" type="button"><span class="material-symbols-outlined" aria-hidden="true">school</span> Continue as sample student</button>` : ""}
-          <p class="auth-footnote">Demo profiles and quiz history stay in this browser. This is not a secure production login.</p>
+          <div class="login-hero-copy">
+            <span class="login-student-badge"><i></i> STUDENT STUDY SPACE</span>
+            <h1 id="login-hero-title">MAKE EVERY<br>STUDY SESSION<br>COUNT.</h1>
+            <p>Keep your practice scores and quiz history together in a simple, distraction-free student profile.</p>
+          </div>
+          <div class="login-feature-area">
+            <div class="login-feature-label"><span>STUDY TOOLS</span><span>FLIP A CARD ↻</span></div>
+            <div class="login-feature-grid">
+              <button class="login-feature-card" type="button" aria-pressed="false">
+                <span class="login-feature-inner">
+                  <span class="login-feature-face login-feature-front">
+                    <span class="login-feature-icon icon-history"><span class="material-symbols-outlined" aria-hidden="true">history</span></span>
+                    <span class="login-feature-copy"><strong>YOUR QUIZ HISTORY</strong><small>Pick up where your progress left off.</small></span>
+                    <span class="login-feature-flip">FLIP ↻</span>
+                  </span>
+                  <span class="login-feature-face login-feature-back back-history">
+                    <span class="login-feature-icon"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span></span>
+                    <span class="login-feature-copy"><strong>REVIEW AND RETRY</strong><small>Your completed quizzes stay together in one place.</small></span>
+                  </span>
+                </span>
+              </button>
+              <button class="login-feature-card" type="button" aria-pressed="false">
+                <span class="login-feature-inner">
+                  <span class="login-feature-face login-feature-front">
+                    <span class="login-feature-icon icon-progress"><span class="material-symbols-outlined" aria-hidden="true">emoji_events</span></span>
+                    <span class="login-feature-copy"><strong>SEE YOUR PROGRESS</strong><small>Review scores and celebrate small wins.</small></span>
+                    <span class="login-feature-flip">FLIP ↻</span>
+                  </span>
+                  <span class="login-feature-face login-feature-back back-progress">
+                    <span class="login-feature-icon"><span class="material-symbols-outlined" aria-hidden="true">insights</span></span>
+                    <span class="login-feature-copy"><strong>YOUR STUDY PROFILE</strong><small>Track attempts, accuracy and personal bests.</small></span>
+                  </span>
+                </span>
+              </button>
+              <button class="login-feature-card" type="button" aria-pressed="false">
+                <span class="login-feature-inner">
+                  <span class="login-feature-face login-feature-front">
+                    <span class="login-feature-icon icon-timer"><span class="material-symbols-outlined" aria-hidden="true">timer</span></span>
+                    <span class="login-feature-copy"><strong>PRACTICE AT YOUR PACE</strong><small>Use timed quizzes and build confidence.</small></span>
+                    <span class="login-feature-flip">FLIP ↻</span>
+                  </span>
+                  <span class="login-feature-face login-feature-back back-timer">
+                    <span class="login-feature-icon"><span class="material-symbols-outlined" aria-hidden="true">hourglass_top</span></span>
+                    <span class="login-feature-copy"><strong>60 SECONDS PER QUESTION</strong><small>Practice with a focused countdown and quiz timer.</small></span>
+                  </span>
+                </span>
+              </button>
+            </div>
+          </div>
+          <footer class="login-hero-footer">© <span id="login-current-year"></span> GRIMOIRE LEARNING</footer>
         </section>
+        <main class="login-panel" aria-label="Student account">
+          <span class="login-spark login-spark-one" aria-hidden="true">✦</span>
+          <span class="login-spark login-spark-two" aria-hidden="true"></span>
+          <div class="login-card-perspective">
+            <div class="login-flip-card ${mode === "signup" ? "flipped" : ""}" id="login-flip-card">
+              <section class="login-card-face login-card-front" aria-labelledby="auth-title">
+                <span class="login-card-badge">✦ STUDENT PORTAL</span>
+                <header class="login-card-heading">
+                  <span class="login-eyebrow"><i></i> WELCOME BACK, STUDENT</span>
+                  <h2 id="auth-title">SIGN IN TO STUDY</h2>
+                  <p>Use your student email to continue to your study space.</p>
+                </header>
+                <div class="login-tabs" role="tablist" aria-label="Student account">
+                  <button class="login-tab active" id="login-tab-signin" role="tab" aria-selected="${mode !== "signup"}" type="button">SIGN IN</button>
+                  <button class="login-tab" id="login-tab-signup" role="tab" aria-selected="${mode === "signup"}" type="button">SIGN UP <span>3D ↻</span></button>
+                </div>
+                ${notice ? `<div class="login-notice" role="status">${escapeHtml(notice)}</div>` : ""}
+                <form id="student-auth-form" class="login-form" novalidate>
+                  <label class="login-field" for="student-email"><span>STUDENT EMAIL</span><span class="login-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">mail</span><input id="student-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required></span></label>
+                  <div class="login-password-group">
+                    <div class="login-password-label"><label class="login-field-label" for="student-password">PASSWORD</label><button class="login-forgot" id="login-forgot" type="button">Forgot?</button></div>
+                    <span class="login-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">lock</span><input id="student-password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required><button class="login-password-toggle" type="button" aria-label="Show password" aria-pressed="false"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></button></span>
+                  </div>
+                  <label class="login-remember"><input name="remember" type="checkbox"><span>Keep me signed in on this device</span></label>
+                  <div class="login-error" id="auth-error" role="alert" hidden></div>
+                  <button class="login-submit" type="submit"><span id="login-submit-text">SIGN IN TO GRIMOIRE</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
+                </form>
+                <div class="login-divider"><span>OR QUICK ACCESS</span></div>
+                <button class="login-quick-access" id="sample-student-login" type="button"><span class="material-symbols-outlined" aria-hidden="true">school</span> CONTINUE AS STUDENT</button>
+              </section>
+              <section class="login-card-face login-card-back" aria-labelledby="signup-title">
+                <span class="login-card-badge badge-lime">✦ NEW STUDENT</span>
+                <header class="login-card-heading signup-heading">
+                  <span class="login-eyebrow"><i></i> YOUR NEXT CHAPTER STARTS HERE</span>
+                  <h2 id="signup-title">CREATE YOUR ACCOUNT</h2>
+                  <p>Set up your student profile and keep your learning progress together.</p>
+                </header>
+                <div class="login-tabs" role="tablist" aria-label="Student account">
+                  <button class="login-tab" id="login-tab-back-signin" role="tab" aria-selected="${mode !== "signup"}" type="button">SIGN IN <span>↻ FLIP</span></button>
+                  <button class="login-tab active" id="login-tab-back-signup" role="tab" aria-selected="${mode === "signup"}" type="button">SIGN UP</button>
+                </div>
+                <form id="student-signup-form" class="login-form signup-form" novalidate>
+                  <label class="login-field" for="student-name"><span>FULL NAME</span><span class="login-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">person</span><input id="student-name" name="name" type="text" autocomplete="name" placeholder="Alex Morgan" maxlength="60" required></span></label>
+                  <label class="login-field" for="student-signup-email"><span>STUDENT EMAIL</span><span class="login-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">mail</span><input id="student-signup-email" name="email" type="email" autocomplete="email" placeholder="alex@university.edu" required></span></label>
+                  <label class="login-field" for="student-goal"><span>CURRENT TARGET SUBJECT</span><select id="student-goal" name="goal" class="login-select">
+                    ${STUDENT_GOALS.map((goal) => `<option>${escapeHtml(goal)}</option>`).join("")}
+                  </select></label>
+                  <label class="login-field" for="student-signup-password"><span>PASSWORD</span><span class="login-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">lock</span><input id="student-signup-password" name="password" type="password" autocomplete="new-password" placeholder="At least 8 characters" minlength="8" required><button class="login-password-toggle" type="button" aria-label="Show password" aria-pressed="false"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></button></span></label>
+                  <label class="login-field" for="student-password-confirm"><span>CONFIRM PASSWORD</span><span class="login-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">lock_reset</span><input id="student-password-confirm" name="confirm_password" type="password" autocomplete="new-password" placeholder="Enter your password again" required></span></label>
+                  <label class="login-remember"><input name="remember" type="checkbox"><span>Keep me signed in on this device</span></label>
+                  <div class="login-error" id="signup-error" role="alert" hidden></div>
+                  <button class="login-submit signup-submit" type="submit"><span>CREATE STUDENT PROFILE</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
+                </form>
+                <button class="login-back-action" id="login-back-action" type="button">ALREADY HAVE AN ACCOUNT? SIGN IN <span>↻</span></button>
+              </section>
+            </div>
+          </div>
+        </main>
       </div>
+      <section class="login-marquee" aria-label="Study inspiration">
+        <div class="login-marquee-track"><span>★ BUILD YOUR STREAK</span><i>•</i><span>⚡ PRACTICE WITH PURPOSE</span><i>•</i><span>✦ REVIEW. RETRY. RISE.</span><i>•</i><span>📖 MAKE TIME TO LEARN</span><i>•</i><span>★ BUILD YOUR STREAK</span><i>•</i><span>⚡ PRACTICE WITH PURPOSE</span><i>•</i></div>
+      </section>
     </section>
   `;
   bindAuthPage(mode);
 }
 
-function setAuthError(message) {
-  const error = document.getElementById("auth-error");
+function setAuthError(message, targetId = "auth-error") {
+  const error = document.getElementById(targetId);
   if (error) {
     error.textContent = message;
     error.hidden = !message;
   }
 }
 
-function passwordStrength(password) {
-  const score = [
-    password.length >= 8,
-    /[A-Z]/.test(password) && /[a-z]/.test(password),
-    /\d/.test(password),
-    /[^A-Za-z0-9]/.test(password),
-  ].filter(Boolean).length;
-  const labels = ["Use 8 or more characters.", "Weak password", "Getting stronger", "Good password", "Strong password"];
-  return { score, label: labels[score] };
-}
-
 function bindAuthPage(mode) {
-  const form = document.getElementById("student-auth-form");
-  const password = document.getElementById("student-password");
-  document.querySelector(".password-toggle").addEventListener("click", (event) => {
-    const button = event.currentTarget;
-    const visible = password.type === "password";
-    password.type = visible ? "text" : "password";
-    button.setAttribute("aria-pressed", String(visible));
-    button.setAttribute("aria-label", visible ? "Hide password" : "Show password");
-    button.querySelector(".material-symbols-outlined").textContent = visible ? "visibility_off" : "visibility";
-  });
-  if (mode === "signup") {
-    password.addEventListener("input", () => {
-      const { score, label } = passwordStrength(password.value);
-      const bar = document.getElementById("password-strength-bar");
-      bar.style.width = `${score * 25}%`;
-      bar.dataset.strength = String(score);
-      document.getElementById("password-strength-label").textContent = label;
-    });
+  const flipCard = document.getElementById("login-flip-card");
+  const front = document.querySelector(".login-card-front");
+  const back = document.querySelector(".login-card-back");
+  const loginTab = document.getElementById("login-tab-signin");
+  const signupTab = document.getElementById("login-tab-signup");
+  const backLoginTab = document.getElementById("login-tab-back-signin");
+  const backSignupTab = document.getElementById("login-tab-back-signup");
+
+  function setAuthViewMode(nextMode, updateUrl = true) {
+    const isSignup = nextMode === "signup";
+    flipCard.classList.toggle("flipped", isSignup);
+    front.inert = isSignup;
+    front.setAttribute("aria-hidden", String(isSignup));
+    back.inert = !isSignup;
+    back.setAttribute("aria-hidden", String(!isSignup));
+    loginTab.classList.toggle("active", !isSignup);
+    signupTab.classList.toggle("active", isSignup);
+    backLoginTab.classList.toggle("active", !isSignup);
+    backSignupTab.classList.toggle("active", isSignup);
+    loginTab.setAttribute("aria-selected", String(!isSignup));
+    signupTab.setAttribute("aria-selected", String(isSignup));
+    backLoginTab.setAttribute("aria-selected", String(!isSignup));
+    backSignupTab.setAttribute("aria-selected", String(isSignup));
+    document.title = `Grimoire - Student ${isSignup ? "Sign Up" : "Sign In"}`;
+    if (updateUrl) window.history.replaceState(null, "", `#${isSignup ? "signup" : "login"}`);
   }
-  form.addEventListener("submit", (event) => {
+
+  setAuthViewMode(mode, false);
+  loginTab.addEventListener("click", () => setAuthViewMode("login"));
+  backLoginTab.addEventListener("click", () => setAuthViewMode("login"));
+  signupTab.addEventListener("click", () => setAuthViewMode("signup"));
+  backSignupTab.addEventListener("click", () => setAuthViewMode("signup"));
+  document.getElementById("login-back-action").addEventListener("click", () => setAuthViewMode("login"));
+
+  document.querySelectorAll(".login-password-toggle").forEach((button) => {
+    button.addEventListener("click", () => {
+      const password = button.closest(".login-input-wrap").querySelector("input");
+      const visible = password.type === "password";
+      password.type = visible ? "text" : "password";
+      button.setAttribute("aria-pressed", String(visible));
+      button.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+      button.querySelector(".material-symbols-outlined").textContent = visible ? "visibility_off" : "visibility";
+    });
+  });
+
+  document.querySelectorAll(".login-feature-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const flipped = card.classList.toggle("is-flipped");
+      card.setAttribute("aria-pressed", String(flipped));
+    });
+  });
+
+  document.getElementById("login-forgot").addEventListener("click", () => {
+    const email = document.getElementById("student-email").value.trim();
+    document.getElementById("student-signup-email").value = email;
+    setAuthViewMode("signup");
+    showToast("Create a student profile to get started.", "info");
+  });
+
+  const typingElement = document.getElementById("login-typewriter");
+  const prompts = ["Cell structure review", "Organic chemistry quiz", "Daily focus session", "Biology deck ready"];
+  let promptIndex = 0;
+  const typePrompt = () => {
+    if (!typingElement.isConnected) return;
+    typingElement.textContent = prompts[promptIndex % prompts.length];
+    promptIndex += 1;
+    window.setTimeout(typePrompt, 2600);
+  };
+  typePrompt();
+  document.getElementById("login-current-year").textContent = String(new Date().getFullYear());
+
+  const loginForm = document.getElementById("student-auth-form");
+  loginForm.addEventListener("submit", (event) => {
     event.preventDefault();
     setAuthError("");
-    const data = new FormData(form);
+    const data = new FormData(loginForm);
     const email = normalizedEmail(data.get("email"));
     const passwordValue = String(data.get("password") || "");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setAuthError("Enter a valid email address to continue.");
-      return;
-    }
-    if (mode === "signup") {
-      const name = String(data.get("name") || "").trim();
-      const confirmPassword = String(data.get("confirm_password") || "");
-      if (name.length < 2) {
-        setAuthError("Enter your name (at least 2 characters).");
-        return;
-      }
-      if (passwordValue.length < 8) {
-        setAuthError("Choose a password with at least 8 characters.");
-        return;
-      }
-      if (passwordValue !== confirmPassword) {
-        setAuthError("The passwords do not match. Please check and try again.");
-        return;
-      }
-      const users = getDemoUsers();
-      if (users.some((user) => normalizedEmail(user.email) === email)) {
-        setAuthError("A demo profile already exists for that email. Sign in instead.");
-        return;
-      }
-      const student = {
-        name,
-        email,
-        goal: String(data.get("goal") || "Build a study habit"),
-        joined_at: new Date().toISOString(),
-      };
-      if (!saveDemoUsers([...users, student])) return;
-      saveDemoStudent(student, data.get("remember") === "on");
-      showToast(`Welcome to Grimoire, ${name}!`, "success");
-      window.location.hash = "#dashboard";
       return;
     }
     if (!passwordValue) {
@@ -524,26 +594,69 @@ function bindAuthPage(mode) {
     }
     const student = getDemoUsers().find((user) => normalizedEmail(user.email) === email);
     if (!student) {
-      setAuthError("No demo profile was found for this email. Sign up first or use the sample student account.");
+      setAuthError("No student profile was found for this email. Sign up first or continue as a student.");
       return;
     }
     saveDemoStudent(student, data.get("remember") === "on");
     showToast(`Welcome back, ${student.name}!`, "success");
     window.location.hash = "#dashboard";
   });
-  document.getElementById("sample-student-login")?.addEventListener("click", () => {
+
+  const signupForm = document.getElementById("student-signup-form");
+  signupForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    setAuthError("", "signup-error");
+    const data = new FormData(signupForm);
+    const name = String(data.get("name") || "").trim();
+    const email = normalizedEmail(data.get("email"));
+    const passwordValue = String(data.get("password") || "");
+    const confirmPassword = String(data.get("confirm_password") || "");
+    if (name.length < 2) {
+      setAuthError("Enter your name (at least 2 characters).", "signup-error");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setAuthError("Enter a valid email address to continue.", "signup-error");
+      return;
+    }
+    if (passwordValue.length < 8) {
+      setAuthError("Choose a password with at least 8 characters.", "signup-error");
+      return;
+    }
+    if (passwordValue !== confirmPassword) {
+      setAuthError("The passwords do not match. Please check and try again.", "signup-error");
+      return;
+    }
     const users = getDemoUsers();
-    const sample = users.find((user) => normalizedEmail(user.email) === "student@grimoire.demo") || {
-      name: "Sample Student",
-      email: "student@grimoire.demo",
-      goal: "Explore a new subject",
+    if (users.some((user) => normalizedEmail(user.email) === email)) {
+      setAuthError("A student profile already exists for that email. Sign in instead.", "signup-error");
+      return;
+    }
+    const student = {
+      name,
+      email,
+      goal: String(data.get("goal") || STUDENT_GOALS[0]),
       joined_at: new Date().toISOString(),
     };
-    if (!users.some((user) => normalizedEmail(user.email) === normalizedEmail(sample.email))) {
-      if (!saveDemoUsers([...users, sample])) return;
+    if (!saveDemoUsers([...users, student])) return;
+    saveDemoStudent(student, data.get("remember") === "on");
+    showToast(`Welcome to Grimoire, ${name}!`, "success");
+    window.location.hash = "#dashboard";
+  });
+
+  document.getElementById("sample-student-login")?.addEventListener("click", () => {
+    const users = getDemoUsers();
+    const student = users.find((user) => normalizedEmail(user.email) === "student@grimoire.edu") || {
+      name: "Student",
+      email: "student@grimoire.edu",
+      goal: STUDENT_GOALS[0],
+      joined_at: new Date().toISOString(),
+    };
+    if (!users.some((user) => normalizedEmail(user.email) === normalizedEmail(student.email))) {
+      if (!saveDemoUsers([...users, student])) return;
     }
-    saveDemoStudent(sample, true);
-    showToast("Signed in as the sample student. No password is needed for this demo shortcut.", "success");
+    saveDemoStudent(student, true);
+    showToast(`Welcome back, ${student.name}!`, "success");
     window.location.hash = "#dashboard";
   });
 }
@@ -590,7 +703,6 @@ function renderProfile() {
   const best = attempts.reduce((highest, item) => Math.max(highest, attemptAccuracy(item)), 0);
   app.innerHTML = `
     <section class="page-section profile-page" aria-labelledby="profile-title">
-      ${state.demoMode ? demoNotice("Your student profile and account-linked quiz attempts are stored only in this browser.") : ""}
       <header class="page-banner">
         <div class="page-banner-icon"><span class="material-symbols-outlined" aria-hidden="true">account_circle</span></div>
         <div><span class="eyebrow">YOUR STUDENT SPACE</span><h1 id="profile-title">Student profile</h1><p>Manage your study preferences and see your personal quiz progress.</p></div>
@@ -604,12 +716,11 @@ function renderProfile() {
           <form id="profile-settings-form" class="profile-settings-form">
             <label class="auth-field" for="profile-name"><span>Display name</span><input class="profile-text-input" id="profile-name" name="name" type="text" value="${escapeHtml(state.student.name)}" maxlength="60" required></label>
             <label class="auth-field" for="profile-goal"><span>Study goal</span><select id="profile-goal" name="goal" class="select-control">
-              ${["Build a study habit", "Prepare for an exam", "Review class notes", "Explore a new subject"].map((goal) => `<option value="${escapeHtml(goal)}" ${state.student.goal === goal ? "selected" : ""}>${escapeHtml(goal)}</option>`).join("")}
+              ${STUDENT_GOALS.map((goal) => `<option value="${escapeHtml(goal)}" ${state.student.goal === goal ? "selected" : ""}>${escapeHtml(goal)}</option>`).join("")}
             </select></label>
             <button class="button button-secondary" type="submit"><span class="material-symbols-outlined" aria-hidden="true">save</span>Save profile</button>
             <div class="form-error" id="profile-error" role="alert" hidden></div>
           </form>
-          <div class="profile-account-note"><span class="material-symbols-outlined" aria-hidden="true">shield</span><span>Demo profile only. Your password is never saved. This profile is not protected by a real authentication service.</span></div>
         </section>
         <section class="profile-progress">
           <div class="profile-stat-grid">
