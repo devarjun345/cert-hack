@@ -3293,8 +3293,8 @@ a {
 
 .login-prompt > span,
 .login-prompt strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.login-prompt > span { color: #80513c; font-family: "JetBrains Mono", monospace; font-size: 9px; font-weight: 700; letter-spacing: .12em; }
-.login-prompt strong { font-size: 12px; font-weight: 800; }
+.login-prompt > span { color: #80513c; font-family: "JetBrains Mono", monospace; font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.login-prompt strong { font-size: 14px; font-weight: 800; }
 
 .login-hero-copy {
   z-index: 1;
@@ -3311,7 +3311,7 @@ a {
   border-radius: 999px;
   background: rgba(255, 250, 239, .68);
   font-family: "JetBrains Mono", monospace;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: .08em;
 }
@@ -3339,7 +3339,7 @@ a {
   max-width: 450px;
   margin: 0;
   color: #462719;
-  font-size: clamp(13px, 1.2vw, 15px);
+  font-size: clamp(14px, 1.3vw, 16px);
   font-weight: 600;
   line-height: 1.65;
 }
@@ -3351,7 +3351,7 @@ a {
   justify-content: space-between;
   margin-bottom: 10px;
   font-family: "JetBrains Mono", monospace;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: .1em;
 }
@@ -3424,8 +3424,8 @@ a {
 .icon-progress { background: #d3ecbf; }
 .icon-timer { background: #d9e8ff; }
 .login-feature-copy { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.login-feature-copy strong { font-family: "Syne", sans-serif; font-size: 9px; font-weight: 800; line-height: 1.25; }
-.login-feature-copy small { color: #655248; font-size: 8px; font-weight: 600; line-height: 1.35; }
+.login-feature-copy strong { font-family: "Syne", sans-serif; font-size: 11px; font-weight: 800; line-height: 1.25; }
+.login-feature-copy small { color: #655248; font-size: 11px; font-weight: 600; line-height: 1.35; }
 
 .login-feature-flip {
   position: absolute;
@@ -3433,11 +3433,11 @@ a {
   bottom: 5px;
   color: #825b47;
   font-family: "JetBrains Mono", monospace;
-  font-size: 7px;
+  font-size: 8px;
   font-weight: 700;
 }
 
-.login-hero-footer { z-index: 1; margin-top: 21px; font-family: "JetBrains Mono", monospace; font-size: 8px; font-weight: 700; letter-spacing: .12em; }
+.login-hero-footer { z-index: 1; margin-top: 21px; font-family: "JetBrains Mono", monospace; font-size: 9px; font-weight: 700; letter-spacing: .12em; }
 
 .login-sun {
   position: absolute;
@@ -3457,7 +3457,7 @@ a {
 }
 
 .login-sun span { font-size: 25px; line-height: 1; }
-.login-sun i { margin-top: 3px; font-family: "JetBrains Mono", monospace; font-size: 7px; font-style: normal; font-weight: 800; }
+.login-sun i { margin-top: 3px; font-family: "JetBrains Mono", monospace; font-size: 8px; font-style: normal; font-weight: 800; }
 
 .login-sticker {
   position: absolute;
@@ -3468,7 +3468,7 @@ a {
   background: #fff4d8;
   box-shadow: 3px 3px 0 #211a17;
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: .04em;
 }
@@ -3531,7 +3531,7 @@ a {
   background: #fff1d2;
   color: #754120;
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 800;
   letter-spacing: .1em;
 }
@@ -3545,7 +3545,7 @@ a {
   gap: 8px;
   color: #56724b;
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: .08em;
 }
@@ -3559,7 +3559,7 @@ a {
   line-height: 1.05;
 }
 
-.login-card-heading p { margin: 0; color: #76665d; font-size: 11px; font-weight: 600; line-height: 1.55; }
+.login-card-heading p { margin: 0; color: #76665d; font-size: 14px; font-weight: 600; line-height: 1.55; }
 
 .login-tabs {
   display: grid;
@@ -3584,12 +3584,12 @@ a {
   color: #76665d;
   cursor: pointer;
   font-family: "JetBrains Mono", monospace;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .04em;
 }
 
-.login-tab span { font-size: 7px; opacity: .65; }
+.login-tab span { font-size: 9px; opacity: .65; }
 .login-tab.active { border-color: #211a17; background: #f9b15a; color: #211a17; box-shadow: 2px 2px 0 #211a17; }
 .login-form { display: grid; gap: 13px; }
 
@@ -3599,12 +3599,12 @@ a {
   gap: 6px;
   color: #59463b;
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: .08em;
 }
 
-.login-field-label { color: #59463b; font-family: "JetBrains Mono", monospace; font-size: 8px; font-weight: 800; letter-spacing: .08em; }
+.login-field-label { color: #59463b; font-family: "JetBrains Mono", monospace; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
 .login-password-group { display: grid; gap: 6px; }
 .login-password-label { display: flex; align-items: center; justify-content: space-between; }
 
@@ -3616,7 +3616,7 @@ a {
   color: #ad5825;
   cursor: pointer;
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: .04em;
 }
@@ -3647,7 +3647,7 @@ a {
   background: transparent;
   color: #211a17;
   font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -3665,7 +3665,7 @@ a {
 }
 
 .login-password-toggle .material-symbols-outlined { font-size: 18px; }
-.login-remember { display: flex; align-items: center; gap: 8px; color: #75665d; cursor: pointer; font-size: 9px; font-weight: 600; }
+.login-remember { display: flex; align-items: center; gap: 8px; color: #75665d; cursor: pointer; font-size: 12px; font-weight: 600; }
 .login-remember input { width: 14px; height: 14px; accent-color: #e87836; }
 
 .login-submit,
@@ -3679,7 +3679,7 @@ a {
   border-radius: 8px;
   cursor: pointer;
   font-family: "JetBrains Mono", monospace;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .07em;
   transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
@@ -3690,12 +3690,12 @@ a {
 .login-submit:active, .login-quick-access:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #211a17; }
 .login-submit .material-symbols-outlined, .login-quick-access .material-symbols-outlined { font-size: 17px; }
 
-.login-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0 12px; color: #a28f82; font-family: "JetBrains Mono", monospace; font-size: 7px; font-weight: 800; letter-spacing: .08em; white-space: nowrap; }
+.login-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0 12px; color: #a28f82; font-family: "JetBrains Mono", monospace; font-size: 9px; font-weight: 800; letter-spacing: .08em; white-space: nowrap; }
 .login-divider::before, .login-divider::after { height: 1px; flex: 1; background: #e7dbd1; content: ""; }
-.login-quick-access { width: 100%; min-height: 42px; border-color: #d9cabd; background: #fffaf3; color: #554337; font-size: 8px; box-shadow: 2px 2px 0 #d9cabd; }
+.login-quick-access { width: 100%; min-height: 42px; border-color: #d9cabd; background: #fffaf3; color: #554337; font-size: 11px; box-shadow: 2px 2px 0 #d9cabd; }
 
 .login-notice,
-.login-error { padding: 10px 11px; border-radius: 7px; font-size: 10px; font-weight: 600; line-height: 1.5; }
+.login-error { padding: 10px 11px; border-radius: 7px; font-size: 12px; font-weight: 600; line-height: 1.5; }
 
 .login-notice { margin: -5px 0 13px; border: 1px solid #c9dfb9; background: #eef7e7; color: #3b6032; }
 .login-error { border: 1px solid #f0c1b4; background: #fff0ec; color: #9c321c; }
@@ -3710,7 +3710,7 @@ a {
   background: #fff;
   color: #493a32;
   font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -3725,7 +3725,7 @@ a {
 
 .login-marquee { height: 43px; flex: 0 0 43px; overflow: hidden; border-top: 2px solid #211a17; background: #e8f2d4; }
 .login-marquee-track { width: max-content; height: 100%; display: flex; align-items: center; gap: 27px; animation: login-marquee-scroll 28s linear infinite; }
-.login-marquee-track span { font-family: "JetBrains Mono", monospace; font-size: 9px; font-weight: 800; letter-spacing: .1em; white-space: nowrap; }
+.login-marquee-track span { font-family: "JetBrains Mono", monospace; font-size: 10px; font-weight: 800; letter-spacing: .1em; white-space: nowrap; }
 .login-marquee-track i { color: #e47639; font-size: 12px; font-style: normal; }
 
 @keyframes login-sun-float {
@@ -3745,8 +3745,8 @@ a {
   .login-hero { padding-right: 30px; padding-left: 34px; }
   .login-feature-grid { gap: 7px; }
   .login-feature-face { gap: 6px; padding: 9px 7px; }
-  .login-feature-copy strong { font-size: 8px; }
-  .login-feature-copy small { font-size: 7px; }
+  .login-feature-copy strong { font-size: 10px; }
+  .login-feature-copy small { font-size: 9px; }
   .login-panel { padding-right: 28px; padding-left: 28px; }
 }
 
@@ -3757,8 +3757,8 @@ a {
   .login-hero-copy h1 { font-size: clamp(54px, 9vw, 78px); }
   .login-feature-grid { gap: 10px; }
   .login-feature-face { gap: 9px; padding: 12px 10px; }
-  .login-feature-copy strong { font-size: 9px; }
-  .login-feature-copy small { font-size: 8px; }
+  .login-feature-copy strong { font-size: 11px; }
+  .login-feature-copy small { font-size: 10px; }
   .login-panel { min-height: 690px; padding: 54px 24px; }
   .login-card-perspective { width: min(100%, 490px); }
 }
@@ -3771,7 +3771,7 @@ a {
   .login-prompt strong { font-size: 10px; }
   .login-hero-copy { margin: 95px 0 34px; }
   .login-hero-copy h1 { font-size: clamp(43px, 12vw, 60px); }
-  .login-hero-copy p { max-width: 330px; font-size: 12px; }
+  .login-hero-copy p { max-width: 330px; font-size: 14px; }
   .login-sun { top: 22%; right: 9%; width: 54px; height: 54px; }
   .login-sun span { font-size: 20px; }
   .login-focus { top: 34%; right: 5%; }
@@ -3781,9 +3781,9 @@ a {
   .login-feature-card { height: 72px; }
   .login-feature-face { padding: 9px 11px; }
   .login-feature-icon { width: 34px; height: 34px; flex-basis: 34px; }
-  .login-feature-copy strong { font-size: 9px; }
-  .login-feature-copy small { font-size: 8px; }
-  .login-feature-label { font-size: 8px; }
+  .login-feature-copy strong { font-size: 11px; }
+  .login-feature-copy small { font-size: 10px; }
+  .login-feature-label { font-size: 10px; }
   .login-panel { min-height: auto; padding: 46px 16px 54px; }
   .login-card-face { padding: 22px 18px; }
   .login-card-heading h2 { font-size: 27px; }
