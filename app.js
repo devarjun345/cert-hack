@@ -374,7 +374,7 @@ function renderAuthPage(mode = "login") {
           <div class="login-diamond" aria-hidden="true"><i></i></div>
           <div class="login-brand-row">
             <a class="login-brand" href="#login" aria-label="Grimoire sign in">
-              <span class="login-brand-icon"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span></span>
+              <span class="login-brand-icon"><img class="login-brand-mark" src="./assets/grimoire-mark.png" alt=""></span>
               <span>GRIMOIRE</span>
             </a>
             <div class="login-prompt"><span>NOW LEARNING</span><strong id="login-typewriter">Cell structure review</strong><i aria-hidden="true"></i></div>

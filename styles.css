@@ -73,17 +73,15 @@ a {
 
 .brand {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 8px 32px;
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 20px;
-  font-weight: 700;
+  justify-content: center;
+  margin: 0 0 24px;
 }
 
-.brand-icon {
-  color: var(--primary-bright);
-  font-size: 28px;
+.brand-logo {
+  display: block;
+  width: 112px;
+  max-width: 100%;
+  height: auto;
 }
 
 .sidebar-nav {
@@ -221,6 +219,12 @@ a {
   box-shadow: var(--shadow-sm);
   font-family: "Space Grotesk", sans-serif;
   font-weight: 700;
+}
+
+.topbar-mark img {
+  width: 27px;
+  height: 27px;
+  object-fit: contain;
 }
 
 .student-chip {
@@ -3276,7 +3280,7 @@ a {
   box-shadow: 3px 3px 0 #211a17;
 }
 
-.login-brand-icon .material-symbols-outlined { font-size: 23px; }
+.login-brand-mark { display: block; width: 32px; height: 32px; object-fit: contain; }
 
 .login-prompt {
   max-width: 210px;
