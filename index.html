@@ -43,7 +43,14 @@
         <span class="material-symbols-outlined" aria-hidden="true">history</span>
         <span>History</span>
       </a>
+      <a class="nav-link" href="#profile" data-route="profile" id="profile-nav-link" hidden>
+        <span class="material-symbols-outlined" aria-hidden="true">account_circle</span>
+        <span>Student profile</span>
+      </a>
     </nav>
+    <button class="button button-neutral button-wide sidebar-signout" id="sidebar-signout" type="button" hidden>
+      <span class="material-symbols-outlined" aria-hidden="true">logout</span>Sign out
+    </button>
 
     <div class="system-status">
       <span>SYSTEM</span>
@@ -60,6 +67,10 @@
         <span class="material-symbols-outlined">menu</span>
       </button>
       <span class="build-tag">GRIMOIRE / 1.0</span>
+      <a class="student-chip" id="student-chip" href="#profile" hidden>
+        <span class="student-avatar" id="student-avatar">S</span>
+        <span id="student-chip-name">Student</span>
+      </a>
       <span class="topbar-mark" aria-hidden="true">G</span>
     </header>
 

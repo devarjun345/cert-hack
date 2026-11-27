@@ -6,6 +6,10 @@ const QUESTION_TIME_LIMIT = 60;
 const ACTIVE_SESSION_KEY = "grimoire.active-session.v1";
 const LAST_RESULT_KEY = "grimoire.last-result.v1";
 const DEMO_STORE_KEY = "grimoire.demo-data.v1";
+const DEMO_USERS_KEY = "grimoire.demo-users.v1";
+const DEMO_AUTH_LOCAL_KEY = "grimoire.demo-student.local.v1";
+const DEMO_AUTH_SESSION_KEY = "grimoire.demo-student.session.v1";
+const STUDENT_ATTEMPTS_KEY = "grimoire.student-attempts.v1";
 const FORCE_DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 
 const DEMO_SOURCE_TEXT = "Cells are the basic units of life. The cell membrane regulates what enters and leaves a cell. In eukaryotic cells, the nucleus stores DNA, mitochondria produce most usable cellular energy, and chloroplasts carry out photosynthesis in plants. Ribosomes build proteins. During photosynthesis, plants use light energy, water, and carbon dioxide to produce glucose and oxygen.";
@@ -61,6 +65,11 @@ const sidebarClose = document.getElementById("sidebar-close");
 const systemStatusName = document.getElementById("system-status-name");
 const systemStatusDot = document.getElementById("system-status-dot");
 const toastRegion = document.getElementById("toast-region");
+const profileNavLink = document.getElementById("profile-nav-link");
+const signOutButton = document.getElementById("sidebar-signout");
+const studentChip = document.getElementById("student-chip");
+const studentChipName = document.getElementById("student-chip-name");
+const studentAvatar = document.getElementById("student-avatar");
 
 const state = {
   document: null,
@@ -86,6 +95,8 @@ const state = {
   demoMode: FORCE_DEMO_MODE,
   demoCorrectAnswers: {},
   demoData: null,
+  student: null,
+  authNotice: "",
 };
 
 function escapeHtml(value) {
@@ -269,6 +280,405 @@ function activateDemoMode() {
   state.apiOnline = false;
   state.demoMode = true;
   setSystemStatus(false, true);
+}
+
+function normalizedEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function readLocalJson(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    showToast("Saved student data could not be read in this browser.", "error");
+    return fallback;
+  }
+}
+
+function getDemoUsers() {
+  const users = readLocalJson(DEMO_USERS_KEY, []);
+  return Array.isArray(users) ? users : [];
+}
+
+function saveDemoUsers(users) {
+  try {
+    localStorage.setItem(DEMO_USERS_KEY, JSON.stringify(users));
+    return true;
+  } catch {
+    showToast("The student profile could not be saved in this browser.", "error");
+    return false;
+  }
+}
+
+function restoreDemoStudent() {
+  let email = "";
+  try {
+    email = localStorage.getItem(DEMO_AUTH_LOCAL_KEY) || sessionStorage.getItem(DEMO_AUTH_SESSION_KEY) || "";
+  } catch {
+    showToast("Student sign-in could not be restored from browser storage.", "error");
+  }
+  const student = getDemoUsers().find((user) => normalizedEmail(user.email) === normalizedEmail(email));
+  state.student = student ? { ...student } : null;
+  updateStudentShell();
+}
+
+function updateStudentShell() {
+  const signedIn = Boolean(state.student);
+  profileNavLink.hidden = !signedIn;
+  signOutButton.hidden = !signedIn;
+  studentChip.hidden = !signedIn;
+  document.body.classList.toggle("auth-mode", !signedIn);
+  if (signedIn) {
+    studentChipName.textContent = state.student.name;
+    studentAvatar.textContent = (state.student.name.trim()[0] || "S").toUpperCase();
+  }
+}
+
+function saveDemoStudent(student, rememberMe) {
+  state.student = {
+    ...student,
+    email: normalizedEmail(student.email),
+  };
+  try {
+    if (rememberMe) {
+      localStorage.setItem(DEMO_AUTH_LOCAL_KEY, state.student.email);
+      sessionStorage.removeItem(DEMO_AUTH_SESSION_KEY);
+    } else {
+      sessionStorage.setItem(DEMO_AUTH_SESSION_KEY, state.student.email);
+      localStorage.removeItem(DEMO_AUTH_LOCAL_KEY);
+    }
+  } catch {
+    showToast("Your sign-in could not be remembered by this browser.", "error");
+  }
+  updateStudentShell();
+}
+
+function renderAuthPage(mode = "login") {
+  const isSignup = mode === "signup";
+  const notice = state.authNotice;
+  state.authNotice = "";
+  app.innerHTML = `
+    <section class="auth-page" aria-labelledby="auth-title">
+      <div class="auth-visual">
+        <div class="auth-brand"><span class="material-symbols-outlined">menu_book</span> GRIMOIRE</div>
+        <div class="auth-visual-copy">
+          <span class="badge badge-tertiary">STUDENT STUDY SPACE</span>
+          <h1>Make every study session count.</h1>
+          <p>Keep your practice scores and quiz history together in a simple student profile.</p>
+        </div>
+        <div class="auth-feature-list">
+          <div><span class="material-symbols-outlined">history</span><span><strong>Your quiz history</strong><small>Pick up where your progress left off.</small></span></div>
+          <div><span class="material-symbols-outlined">emoji_events</span><span><strong>See your progress</strong><small>Review scores and celebrate small wins.</small></span></div>
+          <div><span class="material-symbols-outlined">timer</span><span><strong>Practice at your pace</strong><small>Use timed quizzes and sample documents.</small></span></div>
+        </div>
+        <span class="auth-visual-footnote">FRONTEND DEMO · SAVED ON THIS DEVICE</span>
+      </div>
+      <div class="auth-content">
+        <div class="auth-mobile-brand"><span class="material-symbols-outlined">menu_book</span> GRIMOIRE</div>
+        <section class="auth-card">
+          <div class="auth-card-heading">
+            <span class="eyebrow">${isSignup ? "CREATE YOUR STUDENT SPACE" : "WELCOME BACK, STUDENT"}</span>
+            <h2 id="auth-title">${isSignup ? "Create your profile" : "Sign in to study"}</h2>
+            <p>${isSignup ? "Set up a profile to keep your quiz attempts connected." : "Use your student email to continue to your study space."}</p>
+          </div>
+          <nav class="auth-tabs" aria-label="Student account">
+            <a class="auth-tab ${isSignup ? "" : "active"}" href="#login" ${isSignup ? "" : 'aria-current="page"'}>Sign in</a>
+            <a class="auth-tab ${isSignup ? "active" : ""}" href="#signup" ${isSignup ? 'aria-current="page"' : ""}>Sign up</a>
+          </nav>
+          ${notice ? `<div class="auth-message" role="status">${escapeHtml(notice)}</div>` : ""}
+          <form id="student-auth-form" class="auth-form" novalidate>
+            ${isSignup ? `
+              <label class="auth-field" for="student-name">
+                <span>Your name</span>
+                <span class="auth-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">person</span><input id="student-name" name="name" type="text" autocomplete="name" placeholder="e.g. Alex Morgan" maxlength="60" required></span>
+              </label>
+            ` : ""}
+            <label class="auth-field" for="student-email">
+              <span>Student email</span>
+              <span class="auth-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">mail</span><input id="student-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required></span>
+            </label>
+            ${isSignup ? `
+              <label class="auth-field" for="student-goal">
+                <span>What are you studying for?</span>
+                <select id="student-goal" name="goal" class="select-control">
+                  <option value="Build a study habit">Build a study habit</option>
+                  <option value="Prepare for an exam">Prepare for an exam</option>
+                  <option value="Review class notes">Review class notes</option>
+                  <option value="Explore a new subject">Explore a new subject</option>
+                </select>
+              </label>
+            ` : ""}
+            <label class="auth-field" for="student-password">
+              <span>Password</span>
+              <span class="auth-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">lock</span><input id="student-password" name="password" type="password" autocomplete="${isSignup ? "new-password" : "current-password"}" placeholder="${isSignup ? "At least 8 characters" : "Enter any demo password"}" minlength="${isSignup ? "8" : "1"}" required><button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></button></span>
+            </label>
+            ${isSignup ? `
+              <div class="password-strength" aria-live="polite">
+                <div class="password-strength-track"><span id="password-strength-bar"></span></div>
+                <span id="password-strength-label">Use 8 or more characters.</span>
+              </div>
+              <label class="auth-field" for="student-password-confirm">
+                <span>Confirm password</span>
+                <span class="auth-input-wrap"><span class="material-symbols-outlined" aria-hidden="true">lock_reset</span><input id="student-password-confirm" name="confirm_password" type="password" autocomplete="new-password" placeholder="Enter your password again" required></span>
+              </label>
+            ` : ""}
+            <label class="remember-control"><input name="remember" type="checkbox"><span>Keep me signed in on this device</span></label>
+            <p class="auth-demo-disclaimer"><span class="material-symbols-outlined" aria-hidden="true">info</span>Demo sign-in accepts any non-empty password. Passwords are never verified or saved in this browser.</p>
+            <div class="auth-error" id="auth-error" role="alert" hidden></div>
+            <button class="button button-primary auth-submit" type="submit">${isSignup ? "Create demo profile" : "Sign in to Grimoire"}<span class="material-symbols-outlined" aria-hidden="true">${isSignup ? "person_add" : "arrow_forward"}</span></button>
+          </form>
+          ${!isSignup ? `<div class="auth-divider"><span>OR TRY IT OUT</span></div><button class="button button-neutral auth-sample-button" id="sample-student-login" type="button"><span class="material-symbols-outlined" aria-hidden="true">school</span> Continue as sample student</button>` : ""}
+          <p class="auth-footnote">Demo profiles and quiz history stay in this browser. This is not a secure production login.</p>
+        </section>
+      </div>
+    </section>
+  `;
+  bindAuthPage(mode);
+}
+
+function setAuthError(message) {
+  const error = document.getElementById("auth-error");
+  if (error) {
+    error.textContent = message;
+    error.hidden = !message;
+  }
+}
+
+function passwordStrength(password) {
+  const score = [
+    password.length >= 8,
+    /[A-Z]/.test(password) && /[a-z]/.test(password),
+    /\d/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ].filter(Boolean).length;
+  const labels = ["Use 8 or more characters.", "Weak password", "Getting stronger", "Good password", "Strong password"];
+  return { score, label: labels[score] };
+}
+
+function bindAuthPage(mode) {
+  const form = document.getElementById("student-auth-form");
+  const password = document.getElementById("student-password");
+  document.querySelector(".password-toggle").addEventListener("click", (event) => {
+    const button = event.currentTarget;
+    const visible = password.type === "password";
+    password.type = visible ? "text" : "password";
+    button.setAttribute("aria-pressed", String(visible));
+    button.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+    button.querySelector(".material-symbols-outlined").textContent = visible ? "visibility_off" : "visibility";
+  });
+  if (mode === "signup") {
+    password.addEventListener("input", () => {
+      const { score, label } = passwordStrength(password.value);
+      const bar = document.getElementById("password-strength-bar");
+      bar.style.width = `${score * 25}%`;
+      bar.dataset.strength = String(score);
+      document.getElementById("password-strength-label").textContent = label;
+    });
+  }
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    setAuthError("");
+    const data = new FormData(form);
+    const email = normalizedEmail(data.get("email"));
+    const passwordValue = String(data.get("password") || "");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setAuthError("Enter a valid email address to continue.");
+      return;
+    }
+    if (mode === "signup") {
+      const name = String(data.get("name") || "").trim();
+      const confirmPassword = String(data.get("confirm_password") || "");
+      if (name.length < 2) {
+        setAuthError("Enter your name (at least 2 characters).");
+        return;
+      }
+      if (passwordValue.length < 8) {
+        setAuthError("Choose a password with at least 8 characters.");
+        return;
+      }
+      if (passwordValue !== confirmPassword) {
+        setAuthError("The passwords do not match. Please check and try again.");
+        return;
+      }
+      const users = getDemoUsers();
+      if (users.some((user) => normalizedEmail(user.email) === email)) {
+        setAuthError("A demo profile already exists for that email. Sign in instead.");
+        return;
+      }
+      const student = {
+        name,
+        email,
+        goal: String(data.get("goal") || "Build a study habit"),
+        joined_at: new Date().toISOString(),
+      };
+      if (!saveDemoUsers([...users, student])) return;
+      saveDemoStudent(student, data.get("remember") === "on");
+      showToast(`Welcome to Grimoire, ${name}!`, "success");
+      window.location.hash = "#dashboard";
+      return;
+    }
+    if (!passwordValue) {
+      setAuthError("Enter a password to continue.");
+      return;
+    }
+    const student = getDemoUsers().find((user) => normalizedEmail(user.email) === email);
+    if (!student) {
+      setAuthError("No demo profile was found for this email. Sign up first or use the sample student account.");
+      return;
+    }
+    saveDemoStudent(student, data.get("remember") === "on");
+    showToast(`Welcome back, ${student.name}!`, "success");
+    window.location.hash = "#dashboard";
+  });
+  document.getElementById("sample-student-login")?.addEventListener("click", () => {
+    const users = getDemoUsers();
+    const sample = users.find((user) => normalizedEmail(user.email) === "student@grimoire.demo") || {
+      name: "Sample Student",
+      email: "student@grimoire.demo",
+      goal: "Explore a new subject",
+      joined_at: new Date().toISOString(),
+    };
+    if (!users.some((user) => normalizedEmail(user.email) === normalizedEmail(sample.email))) {
+      if (!saveDemoUsers([...users, sample])) return;
+    }
+    saveDemoStudent(sample, true);
+    showToast("Signed in as the sample student. No password is needed for this demo shortcut.", "success");
+    window.location.hash = "#dashboard";
+  });
+}
+
+function getStudentAttempts(email = state.student?.email) {
+  if (!email) return [];
+  const attempts = readLocalJson(STUDENT_ATTEMPTS_KEY, {});
+  return Array.isArray(attempts[normalizedEmail(email)]) ? attempts[normalizedEmail(email)] : [];
+}
+
+function saveStudentAttempt(result) {
+  if (!state.student) return;
+  const allAttempts = readLocalJson(STUDENT_ATTEMPTS_KEY, {});
+  const email = normalizedEmail(state.student.email);
+  const attempts = Array.isArray(allAttempts[email]) ? allAttempts[email] : [];
+  attempts.unshift({
+    attempt_id: result.attempt_id ?? Date.now(),
+    document_name: result.document_name || "Untitled document",
+    score: Number(result.score) || 0,
+    total_questions: Number(result.total_questions) || 0,
+    accuracy: attemptAccuracy(result),
+    attempted_at: result.attempted_at || new Date().toISOString(),
+    demo_mode: Boolean(result.demo_mode),
+  });
+  allAttempts[email] = attempts.slice(0, HISTORY_LIMIT);
+  try {
+    localStorage.setItem(STUDENT_ATTEMPTS_KEY, JSON.stringify(allAttempts));
+  } catch {
+    showToast("This quiz result could not be linked to your local profile. Check browser storage.", "error");
+  }
+}
+
+function renderProfile() {
+  if (!state.student) {
+    window.location.hash = "#login";
+    return;
+  }
+  const attempts = getStudentAttempts();
+  const totalQuestions = attempts.reduce((sum, item) => sum + Number(item.total_questions || 0), 0);
+  const correctAnswers = attempts.reduce((sum, item) => sum + Number(item.score || 0), 0);
+  const average = attempts.length
+    ? attempts.reduce((sum, item) => sum + attemptAccuracy(item), 0) / attempts.length
+    : 0;
+  const best = attempts.reduce((highest, item) => Math.max(highest, attemptAccuracy(item)), 0);
+  app.innerHTML = `
+    <section class="page-section profile-page" aria-labelledby="profile-title">
+      ${state.demoMode ? demoNotice("Your student profile and account-linked quiz attempts are stored only in this browser.") : ""}
+      <header class="page-banner">
+        <div class="page-banner-icon"><span class="material-symbols-outlined" aria-hidden="true">account_circle</span></div>
+        <div><span class="eyebrow">YOUR STUDENT SPACE</span><h1 id="profile-title">Student profile</h1><p>Manage your study preferences and see your personal quiz progress.</p></div>
+      </header>
+      <div class="profile-layout">
+        <section class="panel profile-card">
+          <div class="profile-identity">
+            <span class="profile-avatar">${escapeHtml((state.student.name.trim()[0] || "S").toUpperCase())}</span>
+            <div><strong>${escapeHtml(state.student.name)}</strong><span>${escapeHtml(state.student.email)}</span><small>Student since ${escapeHtml(formatAttemptDate(state.student.joined_at).split(",").slice(0, 2).join(","))}</small></div>
+          </div>
+          <form id="profile-settings-form" class="profile-settings-form">
+            <label class="auth-field" for="profile-name"><span>Display name</span><input class="profile-text-input" id="profile-name" name="name" type="text" value="${escapeHtml(state.student.name)}" maxlength="60" required></label>
+            <label class="auth-field" for="profile-goal"><span>Study goal</span><select id="profile-goal" name="goal" class="select-control">
+              ${["Build a study habit", "Prepare for an exam", "Review class notes", "Explore a new subject"].map((goal) => `<option value="${escapeHtml(goal)}" ${state.student.goal === goal ? "selected" : ""}>${escapeHtml(goal)}</option>`).join("")}
+            </select></label>
+            <button class="button button-secondary" type="submit"><span class="material-symbols-outlined" aria-hidden="true">save</span>Save profile</button>
+            <div class="form-error" id="profile-error" role="alert" hidden></div>
+          </form>
+          <div class="profile-account-note"><span class="material-symbols-outlined" aria-hidden="true">shield</span><span>Demo profile only. Your password is never saved. This profile is not protected by a real authentication service.</span></div>
+        </section>
+        <section class="profile-progress">
+          <div class="profile-stat-grid">
+            <article class="stat-card"><div><span class="stat-label">Your attempts</span><span class="stat-value">${attempts.length}</span></div><div class="stat-icon"><span class="material-symbols-outlined">quiz</span></div></article>
+            <article class="stat-card"><div><span class="stat-label">Average accuracy</span><span class="stat-value">${formatAccuracy(average)}</span></div><div class="stat-icon"><span class="material-symbols-outlined">insights</span></div></article>
+            <article class="stat-card"><div><span class="stat-label">Best accuracy</span><span class="stat-value">${formatAccuracy(best)}</span></div><div class="stat-icon"><span class="material-symbols-outlined">emoji_events</span></div></article>
+            <article class="stat-card"><div><span class="stat-label">Questions answered</span><span class="stat-value">${totalQuestions}</span></div><div class="stat-icon"><span class="material-symbols-outlined">task_alt</span></div></article>
+          </div>
+          <section class="recent-panel profile-history-panel" aria-labelledby="profile-history-title">
+            <header class="panel-header"><div><h2 id="profile-history-title">Your past quizzes</h2><p>Attempts linked to this student profile</p></div><a class="panel-action" href="#history">Open history</a></header>
+            ${attempts.length ? `
+              <div class="profile-attempt-list">
+                ${attempts.slice(0, 5).map((item) => `
+                  <article class="profile-attempt-row">
+                    <span class="material-symbols-outlined" aria-hidden="true">description</span>
+                    <div><strong>${escapeHtml(item.document_name)}</strong><small>Attempt #${escapeHtml(item.attempt_id)} · ${escapeHtml(formatAttemptDate(item.attempted_at))}${item.demo_mode ? " · Demo score" : ""}</small></div>
+                    <strong>${escapeHtml(item.score)}/${escapeHtml(item.total_questions)}</strong>
+                    <span class="status-badge ${accuracyClass(item.accuracy)}">${escapeHtml(formatAccuracy(item.accuracy))}</span>
+                  </article>
+                `).join("")}
+              </div>
+            ` : `<div class="empty-state profile-empty"><span class="material-symbols-outlined" aria-hidden="true">auto_stories</span><h3>Your quiz history starts here</h3><p>Complete a quiz while signed in and it will appear in this profile.</p><a class="primary-action" href="#dashboard">Browse sample quizzes</a></div>`}
+          </section>
+        </section>
+      </div>
+      <div class="profile-actions"><button type="button" class="button button-neutral" id="profile-signout"><span class="material-symbols-outlined" aria-hidden="true">logout</span>Sign out</button><a class="button button-primary" href="#upload">Start a quiz</a></div>
+    </section>
+  `;
+  document.getElementById("profile-settings-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const name = String(data.get("name") || "").trim();
+    if (name.length < 2) {
+      const error = document.getElementById("profile-error");
+      error.textContent = "Your display name must be at least 2 characters.";
+      error.hidden = false;
+      return;
+    }
+    const users = getDemoUsers();
+    const index = users.findIndex((user) => normalizedEmail(user.email) === normalizedEmail(state.student.email));
+    if (index < 0) {
+      showToast("Student profile was not found. Please sign in again.", "error");
+      return;
+    }
+    users[index] = { ...users[index], name, goal: String(data.get("goal") || users[index].goal) };
+    if (!saveDemoUsers(users)) return;
+    state.student = { ...users[index] };
+    updateStudentShell();
+    showToast("Your profile has been updated.", "success");
+    renderProfile();
+  });
+  document.getElementById("profile-signout").addEventListener("click", signOutStudent);
+}
+
+function signOutStudent() {
+  if (state.quiz && !window.confirm("Sign out and discard your current active quiz?")) return;
+  clearActiveSession();
+  state.lastResult = null;
+  state.student = null;
+  state.authNotice = "You have signed out. Your local profile and past attempts remain saved on this device.";
+  try {
+    localStorage.removeItem(DEMO_AUTH_LOCAL_KEY);
+    sessionStorage.removeItem(DEMO_AUTH_SESSION_KEY);
+    sessionStorage.removeItem(LAST_RESULT_KEY);
+  } catch {
+    showToast("Some session data could not be cleared from browser storage.", "error");
+  }
+  updateStudentShell();
+  window.location.hash = "#login";
 }
 
 function demoNotice(message, includeReset = false) {
@@ -586,11 +996,18 @@ function bindDashboardView(documents, demoMode) {
   });
 }
 
+function visibleDemoAttempts() {
+  const email = normalizedEmail(state.student?.email);
+  return getDemoData().attempts
+    .filter((item) => !item.student_email || normalizedEmail(item.student_email) === email)
+    .sort((a, b) => new Date(b.attempted_at) - new Date(a.attempted_at));
+}
+
 async function renderDashboard() {
   app.innerHTML = loadingTemplate("Loading dashboard");
   if (state.demoMode) {
     const data = getDemoData();
-    state.historyItems = data.attempts.slice().sort((a, b) => new Date(b.attempted_at) - new Date(a.attempted_at));
+    state.historyItems = visibleDemoAttempts();
     app.innerHTML = dashboardTemplate(state.historyItems, data.documents, true);
     bindDashboardView(data.documents, true);
     return;
@@ -605,7 +1022,7 @@ async function renderDashboard() {
     if (isConnectionError(error)) {
       activateDemoMode();
       const data = getDemoData();
-      state.historyItems = data.attempts.slice().sort((a, b) => new Date(b.attempted_at) - new Date(a.attempted_at));
+      state.historyItems = visibleDemoAttempts();
       app.innerHTML = dashboardTemplate(state.historyItems, data.documents, true);
       bindDashboardView(data.documents, true);
       return;
@@ -1228,6 +1645,7 @@ function evaluateDemoQuiz(questions, answers, timeTaken) {
     total_questions: result.total_questions,
     accuracy: result.accuracy,
     attempted_at: new Date().toISOString(),
+    student_email: normalizedEmail(state.student?.email),
   });
   saveDemoData(demoData);
   return result;
@@ -1285,7 +1703,9 @@ async function submitQuiz(isTimeout = false) {
       mode: quizSnapshot.mode,
       quiz: quizSnapshot,
       demo_mode: quizSnapshot.is_demo,
+      attempted_at: new Date().toISOString(),
     };
+    saveStudentAttempt(state.lastResult);
     writeStorage(LAST_RESULT_KEY, state.lastResult);
     clearActiveSession();
     state.lastResult = readStorage(LAST_RESULT_KEY);
@@ -1452,7 +1872,7 @@ async function renderHistory() {
   app.innerHTML = `
     <section class="page-section">
       ${state.demoMode ? demoNotice("Sample attempts and demo scores are stored only in this browser.") : ""}
-      <header class="page-banner"><div class="page-banner-icon"><span class="material-symbols-outlined" aria-hidden="true">history</span></div><div><span class="eyebrow">YOUR PROGRESS</span><h1>Quiz history</h1><p>${state.demoMode ? "Local sample and simulated results." : "Results saved by the Grimoire backend."}</p></div></header>
+      <header class="page-banner"><div class="page-banner-icon"><span class="material-symbols-outlined" aria-hidden="true">history</span></div><div><span class="eyebrow">YOUR PROGRESS</span><h1>Quiz history</h1><p>${state.demoMode ? "Sample attempts and your profile-linked results, saved locally." : "Backend attempts plus quizzes completed by your local profile."}</p></div></header>
       <section class="panel history-panel">
         <div class="history-toolbar">
           <label class="search-control"><span class="material-symbols-outlined" aria-hidden="true">search</span><span class="visually-hidden">Filter by document name</span><input id="history-filter" type="search" placeholder="Filter by document…" value="${escapeHtml(state.historyFilter)}"></label>
@@ -1475,14 +1895,27 @@ async function renderHistory() {
   });
 
   if (state.demoMode) {
-    state.historyItems = getDemoData().attempts.slice();
+    const email = normalizedEmail(state.student?.email);
+    const savedAttempts = getDemoData().attempts.filter((item) => !item.student_email || normalizedEmail(item.student_email) === email);
+    const profileAttempts = getStudentAttempts();
+    const attemptIds = new Set(savedAttempts.map((item) => String(item.attempt_id)));
+    state.historyItems = [
+      ...profileAttempts.filter((item) => !attemptIds.has(String(item.attempt_id))),
+      ...savedAttempts,
+    ];
     renderHistoryContent();
     return;
   }
 
   try {
     const payload = await requestJson(`/api/history?limit=${HISTORY_LIMIT}`);
-    state.historyItems = Array.isArray(payload?.items) ? payload.items : [];
+    const backendAttempts = Array.isArray(payload?.items) ? payload.items : [];
+    const profileAttempts = getStudentAttempts();
+    const attemptIds = new Set(backendAttempts.map((item) => String(item.attempt_id)));
+    state.historyItems = [
+      ...profileAttempts.filter((item) => !attemptIds.has(String(item.attempt_id))),
+      ...backendAttempts,
+    ];
     state.apiOnline = true;
     setSystemStatus(true, false);
     renderHistoryContent();
@@ -1610,17 +2043,28 @@ function setActiveRoute(route) {
 
 function resolveRoute() {
   const requestedRoute = window.location.hash.replace("#", "").split("/")[0].toLowerCase();
-  const route = ["dashboard", "upload", "quiz", "results", "history"].includes(requestedRoute) ? requestedRoute : "dashboard";
+  let route = ["login", "signup", "dashboard", "upload", "quiz", "results", "history", "profile"].includes(requestedRoute)
+    ? requestedRoute
+    : "dashboard";
+  if (!state.student && route !== "login" && route !== "signup") {
+    route = "login";
+    if (window.location.hash !== "#login") window.location.hash = "#login";
+  } else if (state.student && (route === "login" || route === "signup")) {
+    route = "dashboard";
+    if (window.location.hash !== "#dashboard") window.location.hash = "#dashboard";
+  }
   setActiveRoute(route);
   closeSidebar();
-  const titles = { dashboard: "Dashboard", upload: "Upload PDF", quiz: "Active Quiz", results: "Results", history: "Quiz History" };
+  const titles = { login: "Student Sign In", signup: "Student Sign Up", dashboard: "Dashboard", upload: "Upload PDF", quiz: "Active Quiz", results: "Results", history: "Quiz History", profile: "Student Profile" };
   document.title = `Grimoire - ${titles[route]}`;
 
-  if (route === "dashboard") renderDashboard();
+  if (route === "login" || route === "signup") renderAuthPage(route);
+  else if (route === "dashboard") renderDashboard();
   else if (route === "upload") renderUpload();
   else if (route === "quiz") renderQuiz();
   else if (route === "results") renderResults();
-  else renderHistory();
+  else if (route === "history") renderHistory();
+  else renderProfile();
 }
 
 menuButton.addEventListener("click", () => {
@@ -1630,6 +2074,7 @@ menuButton.addEventListener("click", () => {
 });
 sidebarClose.addEventListener("click", closeSidebar);
 sidebarOverlay.addEventListener("click", closeSidebar);
+signOutButton.addEventListener("click", signOutStudent);
 window.addEventListener("hashchange", resolveRoute);
 window.addEventListener("beforeunload", (event) => {
   if (!state.quiz || state.isSubmitting) return;
@@ -1639,6 +2084,11 @@ window.addEventListener("beforeunload", (event) => {
 
 async function initializeApp() {
   restoreSession();
+  restoreDemoStudent();
+  if (!state.student) {
+    resolveRoute();
+    return;
+  }
   if (FORCE_DEMO_MODE) {
     if (state.quiz && !state.quiz.is_demo) clearActiveSession();
     activateDemoMode();
