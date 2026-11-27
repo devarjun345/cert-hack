@@ -2196,12 +2196,12 @@ window.addEventListener("beforeunload", (event) => {
 function dismissStartupScreen() {
   const startupScreen = document.getElementById("startup-screen");
   if (!startupScreen) return;
-  const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 650 : 2450;
+  const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 350 : 1950;
   window.setTimeout(() => {
     startupScreen.classList.add("is-leaving");
     window.setTimeout(() => {
       startupScreen.hidden = true;
-    }, 450);
+    }, 400);
   }, delay);
 }
 
