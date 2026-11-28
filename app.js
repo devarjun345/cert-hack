@@ -10,6 +10,7 @@ const DEMO_USERS_KEY = "grimoire.demo-users.v1";
 const DEMO_AUTH_LOCAL_KEY = "grimoire.demo-student.local.v1";
 const DEMO_AUTH_SESSION_KEY = "grimoire.demo-student.session.v1";
 const STUDENT_ATTEMPTS_KEY = "grimoire.student-attempts.v1";
+const LEARNING_PROGRESS_KEY = "grimoire.learning-progress.v1";
 const STUDENT_GOALS = [
   "MCAT / Pre-Med",
   "AP Biology & Chemistry",
@@ -710,6 +711,91 @@ function saveStudentAttempt(result) {
   }
 }
 
+function learningProgressScope() {
+  return state.student ? `student:${normalizedEmail(state.student.email)}` : "guest";
+}
+
+function inferSubject(documentName) {
+  const name = String(documentName || "Untitled document").replace(/\.pdf$/i, "").trim();
+  const subjects = [
+    ["Biology", /\bbiology\b/i],
+    ["Chemistry", /\bchemistry\b/i],
+    ["Physics", /\bphysics\b/i],
+    ["Mathematics", /\bmath(?:ematics)?\b/i],
+    ["World history", /\bworld history\b/i],
+    ["History", /\bhistory\b/i],
+    ["Programming", /\bprogramming|computer science|coding\b/i],
+  ];
+  return subjects.find(([, pattern]) => pattern.test(name))?.[0] || name || "Other";
+}
+
+function inferTopic(question) {
+  const text = String(question || "");
+  const topics = [
+    ["Photosynthesis", /\bphotosynthesis\b/i],
+    ["Cell membrane", /\bcell membrane\b/i],
+    ["Cell structures", /\b(?:cell|organelle|ribosome|mitochondria|mitochondrion|chloroplast|nucleus|unit of life)\b/i],
+    ["Atomic structure", /\b(?:atom|proton|neutron|electron|atomic number)\b/i],
+    ["Early civilizations", /\b(?:civilization|agriculture|settlement|trade|writing system)\b/i],
+    ["Programming fundamentals", /\b(?:variable|array|function|loop|stack|dictionary|recursion|linear search|operator|index|if statement|complexity)\b/i],
+  ];
+  const matchedTopic = topics.find(([, pattern]) => pattern.test(text));
+  if (matchedTopic) return matchedTopic[0];
+  return text.replace(/^\s*(what|which|where|why|how|who|when)\b[^a-z0-9]*/i, "").trim().slice(0, 64) || "Question review";
+}
+
+function saveLearningProgress(result) {
+  const questions = Array.isArray(result.quiz?.questions) ? result.quiz.questions : [];
+  const review = Array.isArray(result.review) ? result.review : [];
+  if (!questions.length || !review.length) return;
+
+  const reviewByQuestion = new Map(review.map((item) => [String(item.question_id), item]));
+  const areas = questions.flatMap((question, index) => {
+    const questionReview = reviewByQuestion.get(String(question.id)) || review[index];
+    if (!questionReview || typeof questionReview.is_correct !== "boolean") return [];
+    const explicitTopic = [question.topic, question.subtopic, question.category]
+      .find((value) => typeof value === "string" && value.trim());
+    return [{
+      subject: typeof question.subject === "string" && question.subject.trim()
+        ? question.subject.trim()
+        : inferSubject(result.document_name),
+      topic: explicitTopic ? explicitTopic.trim() : inferTopic(question.question),
+      correct: questionReview.is_correct,
+    }];
+  });
+  if (!areas.length) return;
+
+  const savedProgress = readLocalJson(LEARNING_PROGRESS_KEY, {}) || {};
+  const allProgress = typeof savedProgress === "object" && !Array.isArray(savedProgress) ? savedProgress : {};
+  const attempts = Array.isArray(allProgress[learningProgressScope()]) ? allProgress[learningProgressScope()] : [];
+  const attempt = {
+    attempt_id: result.attempt_id ?? Date.now(),
+    attempted_at: result.attempted_at || new Date().toISOString(),
+    demo_mode: Boolean(result.demo_mode),
+    areas,
+  };
+  const filtered = attempts.filter((item) => String(item.attempt_id) !== String(attempt.attempt_id));
+  allProgress[learningProgressScope()] = [attempt, ...filtered].slice(0, HISTORY_LIMIT);
+  try {
+    localStorage.setItem(LEARNING_PROGRESS_KEY, JSON.stringify(allProgress));
+  } catch {
+    showToast("Detailed progress could not be saved in this browser. Check browser storage.", "error");
+  }
+}
+
+function clearDemoLearningProgress() {
+  const savedProgress = readLocalJson(LEARNING_PROGRESS_KEY, {}) || {};
+  if (typeof savedProgress !== "object" || Array.isArray(savedProgress)) return;
+  const scope = learningProgressScope();
+  const attempts = Array.isArray(savedProgress[scope]) ? savedProgress[scope] : [];
+  savedProgress[scope] = attempts.filter((attempt) => !attempt.demo_mode);
+  try {
+    localStorage.setItem(LEARNING_PROGRESS_KEY, JSON.stringify(savedProgress));
+  } catch {
+    showToast("Demo learning progress could not be reset in this browser.", "error");
+  }
+}
+
 function renderProfile() {
   if (!state.student) {
     window.location.hash = "#login";
@@ -843,16 +929,22 @@ function writeStorage(key, value) {
 
 function safeQuestions(questions) {
   if (!Array.isArray(questions)) return [];
-  return questions.map((question) => ({
-    id: String(question.id),
-    question: String(question.question || ""),
-    options: Array.isArray(question.options)
-      ? question.options.map((option) => ({
+  return questions.map((question) => {
+    const safeQuestion = {
+      id: String(question.id),
+      question: String(question.question || ""),
+      options: Array.isArray(question.options)
+        ? question.options.map((option) => ({
           id: String(option.id),
           text: String(option.text || ""),
         }))
-      : [],
-  }));
+        : [],
+    };
+    ["subject", "topic", "subtopic", "category"].forEach((key) => {
+      if (typeof question[key] === "string" && question[key].trim()) safeQuestion[key] = question[key].trim();
+    });
+    return safeQuestion;
+  });
 }
 
 function persistActiveSession() {
@@ -959,6 +1051,129 @@ function uploadedDocumentsTemplate(documents, demoMode) {
   `;
 }
 
+function progressChartTemplate(items) {
+  const attempts = items
+    .filter((item) => Number.isFinite(new Date(item.attempted_at || 0).getTime()))
+    .slice()
+    .sort((first, second) => new Date(first.attempted_at || 0) - new Date(second.attempted_at || 0))
+    .slice(-8);
+  if (!attempts.length) {
+    return `<div class="progress-chart-empty"><span class="material-symbols-outlined" aria-hidden="true">show_chart</span><strong>Your graph starts with your first quiz</strong><span>Complete a quiz to see your accuracy trend here.</span></div>`;
+  }
+
+  const left = 48;
+  const right = 646;
+  const top = 24;
+  const bottom = 164;
+  const points = attempts.map((item, index) => {
+    const accuracy = attemptAccuracy(item);
+    const x = attempts.length === 1 ? (left + right) / 2 : left + ((right - left) * index) / (attempts.length - 1);
+    const y = bottom - (accuracy / 100) * (bottom - top);
+    return { x, y, accuracy, date: item.attempted_at };
+  });
+  const line = points.map((point, index) => `${index ? "L" : "M"} ${point.x} ${point.y}`).join(" ");
+  const area = `${line} L ${points[points.length - 1].x} ${bottom} L ${points[0].x} ${bottom} Z`;
+  const firstDate = new Date(points[0].date);
+  const lastDate = new Date(points[points.length - 1].date);
+  const dateLabel = (date) => new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date);
+  return `
+    <svg class="progress-chart" viewBox="0 0 680 210" role="img" aria-label="Quiz accuracy trend across the ${attempts.length} most recent attempts">
+      <defs><linearGradient id="progress-chart-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#ff5722" stop-opacity=".3"></stop><stop offset="100%" stop-color="#ff5722" stop-opacity=".02"></stop></linearGradient></defs>
+      ${[0, 50, 100].map((value) => {
+        const y = bottom - (value / 100) * (bottom - top);
+        return `<line class="progress-chart-grid" x1="${left}" y1="${y}" x2="${right}" y2="${y}"></line><text class="progress-chart-axis" x="4" y="${y + 4}">${value}%</text>`;
+      }).join("")}
+      <path class="progress-chart-area" d="${area}"></path>
+      <path class="progress-chart-line" d="${line}"></path>
+      ${points.map((point) => `<circle class="progress-chart-point" cx="${point.x}" cy="${point.y}" r="5"><title>${escapeHtml(formatAccuracy(point.accuracy))} · ${escapeHtml(formatAttemptDate(point.date))}</title></circle>`).join("")}
+      ${points.length > 1
+        ? `<text class="progress-chart-date" x="${left}" y="198" text-anchor="start">${escapeHtml(dateLabel(firstDate))}</text><text class="progress-chart-date" x="${right}" y="198" text-anchor="end">${escapeHtml(dateLabel(lastDate))}</text>`
+        : `<text class="progress-chart-date" x="${(left + right) / 2}" y="198" text-anchor="middle">${escapeHtml(dateLabel(lastDate))}</text>`}
+    </svg>
+  `;
+}
+
+function weaknessGroups(attempts, key) {
+  const groups = new Map();
+  (Array.isArray(attempts) ? attempts : []).forEach((attempt) => (Array.isArray(attempt.areas) ? attempt.areas : []).forEach((area) => {
+    const label = String(area[key] || "Other").trim() || "Other";
+    const group = groups.get(label) || { label, total: 0, correct: 0 };
+    group.total += 1;
+    if (area.correct) group.correct += 1;
+    groups.set(label, group);
+  }));
+  return [...groups.values()]
+    .filter((group) => group.correct < group.total)
+    .map((group) => ({ ...group, accuracy: Math.round((group.correct / group.total) * 100) }))
+    .sort((first, second) => first.accuracy - second.accuracy || second.total - first.total)
+    .slice(0, 3);
+}
+
+function weaknessListTemplate(groups, emptyMessage) {
+  if (!groups.length) return `<p class="weakness-empty">${emptyMessage}</p>`;
+  return `
+    <ul class="weakness-list">
+      ${groups.map((group) => `
+        <li>
+          <div class="weakness-label"><strong>${escapeHtml(group.label)}</strong><span>${group.correct}/${group.total} correct</span></div>
+          <div class="weakness-track" role="progressbar" aria-label="${escapeHtml(group.label)} accuracy" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${group.accuracy}"><span style="width: ${group.accuracy}%"></span></div>
+        </li>
+      `).join("")}
+    </ul>
+  `;
+}
+
+function learningProgressTemplate(items) {
+  const ordered = items.slice()
+    .sort((first, second) => new Date(first.attempted_at || 0) - new Date(second.attempted_at || 0));
+  const recent = ordered.slice(-2);
+  const latest = recent[recent.length - 1];
+  const change = recent.length === 2 ? Math.round(attemptAccuracy(recent[1]) - attemptAccuracy(recent[0])) : null;
+  const progressCopy = change === null
+    ? latest ? "One more quiz will show how your score is changing." : "Take a quiz to start your progress check."
+    : change > 0 ? `Up ${change} points from your previous quiz. Keep that momentum going!`
+      : change < 0 ? `Down ${Math.abs(change)} points from your previous quiz. A quick review can help.`
+        : "Holding steady since your previous quiz. Keep practicing!";
+  const progressLabel = change === null ? "IN PROGRESS" : change > 0 ? "TRENDING UP" : change < 0 ? "REVIEW & RETRY" : "STEADY";
+  const savedProgress = readLocalJson(LEARNING_PROGRESS_KEY, {}) || {};
+  const areas = Array.isArray(savedProgress[learningProgressScope()]) ? savedProgress[learningProgressScope()] : [];
+  const subjects = weaknessGroups(areas, "subject");
+  const topics = weaknessGroups(areas, "topic");
+  const emptyMessage = areas.length
+    ? "No repeated misses here. Nice work!"
+    : "Detailed weak spots appear after a quiz with answer review.";
+  return `
+    <section class="learning-insights" aria-label="Learning progress insights">
+      <article class="progress-panel" aria-labelledby="progress-check-title">
+        <header class="panel-header">
+          <div><h2 id="progress-check-title">Progress check</h2><p>Your recent accuracy, at a glance</p></div>
+          <span class="badge badge-tertiary">${progressLabel}</span>
+        </header>
+        <div class="progress-check-summary">
+          <div><strong>${latest ? escapeHtml(formatAccuracy(attemptAccuracy(latest))) : "—"}</strong><span>${latest ? "latest quiz accuracy" : "no quizzes yet"}</span></div>
+          <p>${progressCopy}</p>
+        </div>
+        <div class="progress-chart-wrap">
+          <div class="progress-chart-heading"><strong>YOUR MOMENTUM</strong><span>Accuracy · last 8 quizzes</span></div>
+          ${progressChartTemplate(items)}
+        </div>
+        <a class="progress-check-action" href="#upload"><span class="material-symbols-outlined" aria-hidden="true">bolt</span>Start a quiz</a>
+      </article>
+      <article class="weakness-panel" aria-labelledby="weakness-title">
+        <header class="panel-header">
+          <div><h2 id="weakness-title">Weak subjects &amp; topics</h2><p>Focus areas from your answer reviews</p></div>
+          <span class="material-symbols-outlined weakness-heading-icon" aria-hidden="true">psychology</span>
+        </header>
+        <div class="weakness-columns">
+          <section aria-labelledby="weak-subjects-title"><h3 id="weak-subjects-title">SUBJECTS TO REVISIT</h3>${weaknessListTemplate(subjects, emptyMessage)}</section>
+          <section aria-labelledby="weak-topics-title"><h3 id="weak-topics-title">TOPICS TO PRACTICE</h3>${weaknessListTemplate(topics, emptyMessage)}</section>
+        </div>
+        <p class="weakness-footnote">Based on saved question-by-question results in this browser.</p>
+      </article>
+    </section>
+  `;
+}
+
 function dashboardTemplate(items, documents = [], demoMode = false) {
   const averageAccuracy = items.length
     ? items.reduce((sum, item) => sum + (Number(item.accuracy) || 0), 0) / items.length
@@ -1036,6 +1251,7 @@ function dashboardTemplate(items, documents = [], demoMode = false) {
           <div class="stat-icon" aria-hidden="true"><span class="material-symbols-outlined">description</span></div>
         </article>
       </div>
+      ${learningProgressTemplate(items)}
       <section class="recent-panel documents-panel" aria-labelledby="documents-title">
         <header class="panel-header">
           <div><h2 id="documents-title">Recent documents</h2><p>${demoMode ? "Sample PDFs available to try" : "Uploaded PDFs available in this session"}</p></div>
@@ -1107,6 +1323,7 @@ function bindDashboardView(documents, demoMode) {
       }
     }
     saveDemoData(cloneDemoSeed());
+    clearDemoLearningProgress();
     showToast("Sample documents and attempts were restored.", "success");
     renderDashboard();
   });
@@ -1839,6 +2056,7 @@ async function submitQuiz(isTimeout = false) {
       demo_mode: quizSnapshot.is_demo,
       attempted_at: new Date().toISOString(),
     };
+    saveLearningProgress(state.lastResult);
     saveStudentAttempt(state.lastResult);
     writeStorage(LAST_RESULT_KEY, state.lastResult);
     clearActiveSession();
