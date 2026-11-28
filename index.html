@@ -100,7 +100,42 @@
     </main>
   </div>
 
+  <section class="study-chat" aria-label="Study assistant">
+    <button class="study-chat-launcher" id="study-chat-launcher" type="button" aria-expanded="false" aria-controls="study-chat-panel">
+      <span class="material-symbols-outlined" aria-hidden="true">forum</span>
+      <span>Ask Grimoire</span>
+    </button>
+    <div class="study-chat-panel" id="study-chat-panel" hidden>
+      <header class="study-chat-header">
+        <div>
+          <strong>Study assistant</strong>
+          <span>Biology and beginner programming</span>
+        </div>
+        <button class="study-chat-close" id="study-chat-close" type="button" aria-label="Close chat">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </header>
+      <div class="study-chat-messages" id="study-chat-messages" role="log" aria-live="polite" aria-relevant="additions">
+        <p class="study-chat-message assistant">Hi! Ask me about cells, photosynthesis, programming, or React.</p>
+        <div class="study-chat-suggestions" id="study-chat-suggestions" aria-label="Suggested questions">
+          <button type="button" data-chat-prompt="What is photosynthesis?">What is photosynthesis?</button>
+          <button type="button" data-chat-prompt="What is React?">What is React?</button>
+          <button type="button" data-chat-prompt="What is a variable?">What is a variable?</button>
+        </div>
+      </div>
+      <form class="study-chat-form" id="study-chat-form">
+        <label class="visually-hidden" for="study-chat-input">Your message</label>
+        <textarea id="study-chat-input" rows="2" maxlength="4000" placeholder="Ask a study question..." required></textarea>
+        <button class="study-chat-send" id="study-chat-send" type="submit" aria-label="Send message">
+          <span class="material-symbols-outlined" aria-hidden="true">send</span>
+        </button>
+      </form>
+      <p class="study-chat-hint">Enter to send · Shift+Enter for a new line</p>
+    </div>
+  </section>
+
   <div class="toast-region" id="toast-region" aria-live="polite"></div>
   <script src="./app.js"></script>
+  <script src="./chat.js"></script>
 </body>
 </html>

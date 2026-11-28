@@ -20,9 +20,11 @@ const STUDENT_GOALS = [
 const FORCE_DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 
 const DEMO_SOURCE_TEXT = "Cells are the basic units of life. The cell membrane regulates what enters and leaves a cell. In eukaryotic cells, the nucleus stores DNA, mitochondria produce most usable cellular energy, and chloroplasts carry out photosynthesis in plants. Ribosomes build proteins. During photosynthesis, plants use light energy, water, and carbon dioxide to produce glucose and oxygen.";
+const DEMO_PROGRAMMING_SOURCE_TEXT = "Programming uses variables to store values, expressions to calculate results, conditions to choose between actions, and loops to repeat instructions. Functions group reusable logic. Arrays use indexes to access ordered items, while dictionaries map keys to values. Common structures include stacks, which follow last-in, first-out order. A linear search may inspect every item in a list, giving it O(n) time complexity. Recursive functions need a base case to stop.";
 
 const DEMO_SEED = {
   documents: [
+    { document_id: "demo-programming", filename: "Programming Fundamentals.pdf", page_count: 20, extraction_status: "sample", text_preview: DEMO_PROGRAMMING_SOURCE_TEXT, uploaded_at: "2026-11-28T08:00:00" },
     { document_id: "demo-biology", filename: "Biology - Cell Structure.pdf", page_count: 18, extraction_status: "sample", text_preview: DEMO_SOURCE_TEXT, uploaded_at: "2026-11-27T09:10:00" },
     { document_id: "demo-history", filename: "World History - Ancient Civilizations.pdf", page_count: 32, extraction_status: "sample", text_preview: "Ancient civilizations developed around reliable sources of water. Agriculture supported permanent settlements, specialized work, trade, and systems of writing and government.", uploaded_at: "2026-11-26T14:30:00" },
     { document_id: "demo-chemistry", filename: "Chemistry - Atomic Basics.pdf", page_count: 12, extraction_status: "sample", text_preview: "Atoms contain protons and neutrons in a nucleus, with electrons occupying regions around it. The number of protons determines an element's atomic number.", uploaded_at: "2026-11-25T11:00:00" },
@@ -62,6 +64,19 @@ const DEMO_HISTORY_QUESTION_BANK = [
   { question: "What did specialized work allow people to do?", options: [{ id: "A", text: "Focus on different occupations" }, { id: "B", text: "Stop exchanging goods" }, { id: "C", text: "Avoid living in settlements" }, { id: "D", text: "Eliminate government" }], correct_option_id: "A", explanation: "Stable food supplies allowed people to develop different occupations." },
   { question: "Which development helped preserve records and information?", options: [{ id: "A", text: "Writing systems" }, { id: "B", text: "Barter alone" }, { id: "C", text: "Seasonal flooding" }, { id: "D", text: "Stone tools only" }], correct_option_id: "A", explanation: "Writing systems helped civilizations record information." },
   { question: "What does trade allow communities to do?", options: [{ id: "A", text: "Exchange goods" }, { id: "B", text: "Avoid all contact" }, { id: "C", text: "End specialization" }, { id: "D", text: "Stop producing food" }], correct_option_id: "A", explanation: "Trade connects communities through the exchange of goods." },
+];
+
+const DEMO_PROGRAMMING_QUESTION_BANK = [
+  { question: "What is the result of `score = 4; score = score + 3`?", options: [{ id: "A", text: "7" }, { id: "B", text: "43" }, { id: "C", text: "4" }, { id: "D", text: "3" }], correct_option_id: "A", explanation: "The variable starts at 4, then 3 is added, so score becomes 7." },
+  { question: "In a zero-based list, what is the index of the first item?", options: [{ id: "A", text: "1" }, { id: "B", text: "-1" }, { id: "C", text: "0" }, { id: "D", text: "It has no index" }], correct_option_id: "C", explanation: "Zero-based indexing starts at 0, so the first item is at index 0." },
+  { question: "How many times does a loop from 0 through 4 run?", options: [{ id: "A", text: "4 times" }, { id: "B", text: "5 times" }, { id: "C", text: "6 times" }, { id: "D", text: "It never runs" }], correct_option_id: "B", explanation: "The values 0, 1, 2, 3, and 4 make five iterations." },
+  { question: "What is the main purpose of a function?", options: [{ id: "A", text: "To store only numbers" }, { id: "B", text: "To make a program stop" }, { id: "C", text: "To define reusable instructions" }, { id: "D", text: "To replace every variable" }], correct_option_id: "C", explanation: "A function groups instructions so they can be called and reused." },
+  { question: "Which data structure stores values as key–value pairs?", options: [{ id: "A", text: "Stack" }, { id: "B", text: "Dictionary or map" }, { id: "C", text: "Queue" }, { id: "D", text: "Array index" }], correct_option_id: "B", explanation: "Dictionaries and maps associate each key with a value." },
+  { question: "What does an `if` statement let a program do?", options: [{ id: "A", text: "Choose an action based on a condition" }, { id: "B", text: "Repeat code forever" }, { id: "C", text: "Store a collection" }, { id: "D", text: "Sort every variable" }], correct_option_id: "A", explanation: "An if statement runs a branch when its condition is true." },
+  { question: "What is the typical time complexity of searching every item in an unsorted list one by one?", options: [{ id: "A", text: "O(1)" }, { id: "B", text: "O(log n)" }, { id: "C", text: "O(n)" }, { id: "D", text: "O(n²)" }], correct_option_id: "C", explanation: "In the worst case, a linear search checks all n items." },
+  { question: "Why does a recursive function need a base case?", options: [{ id: "A", text: "To make every call use a loop" }, { id: "B", text: "To provide a stopping condition" }, { id: "C", text: "To store the function's name" }, { id: "D", text: "To sort its arguments" }], correct_option_id: "B", explanation: "The base case ends recursion and prevents calls from continuing indefinitely." },
+  { question: "Which rule describes how a stack removes items?", options: [{ id: "A", text: "First in, first out" }, { id: "B", text: "Smallest value first" }, { id: "C", text: "Last in, first out" }, { id: "D", text: "Random order" }], correct_option_id: "C", explanation: "A stack follows last in, first out (LIFO) order." },
+  { question: "What does the equality operator `==` usually do?", options: [{ id: "A", text: "Assigns a new value to a variable" }, { id: "B", text: "Compares two values for equality" }, { id: "C", text: "Repeats a statement" }, { id: "D", text: "Declares a function" }], correct_option_id: "B", explanation: "The equality operator compares values; assignment uses a different operator in most languages." },
 ];
 
 const app = document.getElementById("app");
@@ -261,6 +276,12 @@ function getDemoData() {
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed.documents) && Array.isArray(parsed.attempts)) {
+        const documentIds = new Set(parsed.documents.map((item) => item.document_id));
+        const addedDocuments = DEMO_SEED.documents.filter((item) => !documentIds.has(item.document_id));
+        if (addedDocuments.length) {
+          parsed.documents.push(...addedDocuments);
+          saveDemoData(parsed);
+        }
         state.demoData = parsed;
         return state.demoData;
       }
@@ -1427,11 +1448,13 @@ function setSegmentSelection(button, selector) {
 function createDemoQuiz(count, difficulty, mode) {
   const documentId = state.document.document_id || "";
   const filename = (state.document.filename || "").toLowerCase();
-  const bank = documentId.includes("chemistry") || filename.includes("chemistry")
-    ? DEMO_CHEMISTRY_QUESTION_BANK
-    : documentId.includes("history") || filename.includes("history")
-      ? DEMO_HISTORY_QUESTION_BANK
-      : DEMO_QUESTION_BANK;
+  const bank = documentId.includes("programming") || filename.includes("programming")
+    ? DEMO_PROGRAMMING_QUESTION_BANK
+    : documentId.includes("chemistry") || filename.includes("chemistry")
+      ? DEMO_CHEMISTRY_QUESTION_BANK
+      : documentId.includes("history") || filename.includes("history")
+        ? DEMO_HISTORY_QUESTION_BANK
+        : DEMO_QUESTION_BANK;
   const selectedQuestions = bank.slice(0, Math.min(count, bank.length));
   if (selectedQuestions.length < count) {
     showToast(`The demo question bank has ${selectedQuestions.length} questions, so the quiz will use that many.`, "info", 6000);
