@@ -900,14 +900,7 @@ function signOutStudent() {
 }
 
 function demoNotice(message, includeReset = false) {
-  return `
-    <div class="demo-notice" role="status">
-      <span class="material-symbols-outlined" aria-hidden="true">science</span>
-      <div><strong>DEMO MODE</strong><span>${escapeHtml(message)}</span></div>
-      <span class="demo-tag">SAMPLE DATA</span>
-      ${includeReset ? '<button type="button" class="demo-reset-button" id="reset-demo-data">Reset sample data</button>' : ""}
-    </div>
-  `;
+  return "";
 }
 
 function readStorage(key) {
